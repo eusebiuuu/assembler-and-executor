@@ -1,33 +1,19 @@
 import os
-import re
 
-aggregation = []
+instruction_counter = {}
 
 for folder in os.listdir('inputs'):
-	for fileName in os.listdir(f'inputs/{folder}'):
-		if fileName.startswith('asm'):
-			with open(f'inputs/{folder}/{fileName}') as file:
-				aggregation += file.readlines()
+    with open(f'inputs/{folder}/asm.s') as file:
+        for line in file.readlines():
+            if not line.isspace() and line[0].isspace():
+                word = line.split(maxsplit=1)[0]
+                if word[0] != '#':
+                    instruction_counter[word] = instruction_counter.get(word, 0) + 1
 
-# print(aggregation)
+total_instruction_count = sum(instruction_counter.values())
 
-opCounter = {}
+print(f'{len(instruction_counter)} unique instructions from {total_instruction_count} samples')
 
-for line in aggregation:
-	if re.findall('^\s*$', line):
-		continue
-	if re.findall('^\s*\w+:', line):
-		continue
-	if re.findall('^\s*\.', line):
-		continue
-	if re.findall('^\s*#.*$', line):
-		continue
-	op = re.findall('^\s*(\S*)', line)
-	opCounter[op[0]] = opCounter.get(op[0], 0) + 1
-
-sum = 0
-for elem in opCounter.values():
-  	sum += elem
-
-for elem in opCounter.items():
-	print(elem[0], elem[1] / sum)
+print('\ninstruction\tcount\tprobability')
+for (instruction, count) in sorted(instruction_counter.items(), key = lambda x: -x[1]):
+    print(f'{instruction}\t', count, '%.4f'%round(count / total_instruction_count, 4), sep='\t')
