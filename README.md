@@ -18,7 +18,7 @@
          2. Jumps issues
          3. First instruction is a jump to main
       6. Test the assembler
-   2. Executor (refactor)
+   2. Executor
       1. Registers file
       2. Program Counter (PC): Manage a program counter to keep track of the current instruction being executed.
       3. Memory Model: Implement a simple memory model to load and store data. This can be an array representing RAM.
