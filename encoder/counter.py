@@ -19,6 +19,13 @@ for (instruction, count) in sorted(instruction_counter.items(), key = lambda x: 
     print(f'{instruction}\t', count, '%.4f'%round(count / total_instruction_count, 4), sep='\t')
 
 
+
+with open('./freq.txt', 'w') as file:
+    for (instruction, count) in sorted(instruction_counter.items(), key = lambda x: -x[1]):
+        file.write(f'{instruction} {count / total_instruction_count}\n')
+
+
+
 with open('../assembler/instruction_enum.h', 'w') as file:
 
     file.write('#ifndef INSTRUCTION_ENUM\n#define INSTRUCTION_ENUM\nenum InstructionType {')
