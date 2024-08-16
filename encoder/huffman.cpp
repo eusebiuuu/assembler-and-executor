@@ -3,49 +3,44 @@
 #include <string>
 #include <queue>
 #include <vector>
-#include <map>
+#include <algorithm>
 std::ifstream fin("freq.txt");
 const std::string DUMMY_NODE = ".";
 
-struct cmpByStringLength {
-    bool operator()(const std::string& a, const std::string& b) const {
-        return a.length() <= b.length();
-    }
-};
-
-std::map<std::string, std::string, cmpByStringLength> encoding;
+std::vector<std::pair<std::string, std::string>> encoding;
 
 struct Node {
     std::string name;
     double prob;
     Node *leftChild, *rightChild;
     Node(double p, const std::string &str = DUMMY_NODE): name(str), prob(p), leftChild(nullptr), rightChild(nullptr) {}
-    bool operator<(Node *n) {
-        return this->prob < n->prob;
+};
+
+struct NodepCmp {
+    bool operator()(Node* a, Node* b) const {
+        return a->prob > b->prob;
     }
 };
 
-void goThroughTree(Node *currNode, const std::string &currEncoding) {
+void goThroughTree(Node *currNode, std::string currEncoding) {
     if (currNode->name != DUMMY_NODE) {
-        encoding[currEncoding] = currNode->name;
-        delete currNode;
+        encoding.push_back({currNode->name, currEncoding});
         return;
     }
     goThroughTree(currNode->leftChild, currEncoding + "0");
     goThroughTree(currNode->rightChild, currEncoding + "1");
-    delete currNode;
 }
 
 int main() {
     double prob;
     std::string operation;
-    std::priority_queue<Node *> minProb;
+    std::priority_queue<Node*, std::vector<Node*>, NodepCmp> minProb;
     while (fin >> operation) {
         fin >> prob;
         Node *newNode = new Node(prob, operation);
         minProb.push(newNode);
     }
-    while ((int) minProb.size() > 1) {
+    while (minProb.size() > 1) {
         auto leftNode = minProb.top();
         minProb.pop();
         auto rightNode = minProb.top();
@@ -56,8 +51,9 @@ int main() {
         minProb.push(newNode);
     }
     goThroughTree(minProb.top(), "");
+    std::sort(encoding.begin(), encoding.end(), [](auto& l, auto& r){ return l.second.length() < r.second.length(); });
     for (auto elem : encoding) {
-        std::cout << elem.second << '\t' << elem.first << '\n';
+        std::cout << elem.first << '\t' << elem.second << '\n';
     }
     return 0;
 }
