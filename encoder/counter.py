@@ -12,8 +12,20 @@ for folder in os.listdir('../inputs'):
 
 total_instruction_count = sum(instruction_counter.values())
 
-# print(f'{len(instruction_counter)} unique instructions from {total_instruction_count} samples')
+print(f'{len(instruction_counter)} unique instructions from {total_instruction_count} samples')
 
-# print('\ninstruction\tprobability')
+print('\ninstruction\tcount\tprobability')
 for (instruction, count) in sorted(instruction_counter.items(), key = lambda x: -x[1]):
-    print(f'{instruction}\t', '%.4f'%round(count / total_instruction_count, 4), sep='\t')
+    print(f'{instruction}\t', count, '%.4f'%round(count / total_instruction_count, 4), sep='\t')
+
+
+with open('../assembler/instruction_enum.h', 'w') as file:
+
+    file.write('#ifndef INSTRUCTION_ENUM\n#define INSTRUCTION_ENUM\nenum InstructionType {')
+    first = True
+    for instruction in instruction_counter.keys():
+        if not first:
+            file.write(',')
+        file.write(f'\n\t{instruction.replace('.','_')}')
+        first = False
+    file.write('\n};\n#endif')
