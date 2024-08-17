@@ -5,13 +5,42 @@
 #include <string>
 #include <functional>
 #include <unordered_map>
+#include <bitset>
+
 #include "instruction_enum.h"
 #include "dumb_parser.hpp"
+
 using namespace std;
+
 // ifstream fin("../inputs/11_Vector_x_Matrix/asm.s");
 ifstream fin("../inputs/12_Calling_a_C_Function_from_Assembly/asm.s");
 ifstream enc("../encoder/encodings.txt");
-unordered_map<string, string> encodings;
+unordered_map<InstructionType, string> encodings;
+
+int current_bit_offset = 0;
+
+void join_bit(bool bit) {
+	static std::bitset<8> current_byte;
+	current_byte[current_bit_offset] = bit;
+	current_bit_offset++;
+	if(current_bit_offset >= 8) {
+		std::cout << (unsigned char)current_byte.to_ulong();
+		current_bit_offset = 0;
+	}
+}
+
+void pad_current_byte() {
+	while(current_bit_offset) {
+		join_bit(0);
+	}
+}
+
+void emit_instruction(InstructionType instruction) {
+	pad_current_byte();
+	for(char c : encodings[instruction]) {
+		join_bit(c - '0');
+	}
+}
 
 void parseRoData() {
 	string line;
@@ -28,12 +57,9 @@ void parseRoData() {
 
 void getEncodings() {
 	string instr, currEnc;
-	while (enc >> instr) {
-		enc >> currEnc;
-		encodings[instr] = currEnc;
-	}
-	for (auto elem : encodings) {
-		cout << elem.first << ' ' << elem.second << '\n';
+	while (enc >> instr >> currEnc) {
+		encodings[instruction_to_enum(instr)] = currEnc;
+		cout << instr << ' ' << currEnc << '\n';
 	}
 }
 
