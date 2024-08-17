@@ -9,11 +9,14 @@
 
 #include "instruction_enum.h"
 #include "dumb_parser.hpp"
+#include "register_parser.hpp"
+#include "registers_enum.h"
 
 using namespace std;
+ofstream fout("out");
 
 // ifstream fin("../inputs/11_Vector_x_Matrix/asm.s");
-ifstream fin("../inputs/12_Calling_a_C_Function_from_Assembly/asm.s");
+ifstream fin("../inputs/04_Reverse_a_string/asm.s");
 ifstream enc("../encoder/encodings.txt");
 unordered_map<InstructionType, string> encodings;
 
@@ -21,10 +24,10 @@ int current_bit_offset = 0;
 
 void join_bit(bool bit) {
 	static std::bitset<8> current_byte;
-	current_byte[current_bit_offset] = bit;
+	current_byte[7 - current_bit_offset] = bit;
 	current_bit_offset++;
 	if(current_bit_offset >= 8) {
-		std::cout << (unsigned char)current_byte.to_ulong();
+		fout << (unsigned char)current_byte.to_ulong();
 		current_bit_offset = 0;
 	}
 }
@@ -39,6 +42,27 @@ void emit_instruction(InstructionType instruction) {
 	pad_current_byte();
 	for(char c : encodings[instruction]) {
 		join_bit(c - '0');
+	}
+}
+
+void emit_register(RegisterIntType reg) {
+	for (int bit = 3; bit >= 0; --bit) {
+		bool val = reg & (1 << bit);
+		join_bit(val);
+	}
+}
+
+void emit_register(RegisterFloatType reg) {
+	for (int bit = 1; bit >= 0; --bit) {
+		bool val = reg & (1 << bit);
+		join_bit(val);
+	}
+}
+
+void emit_immediate(int num, const int bits_count) {
+	for (int i = bits_count - 1; i >= 0; --i) {
+		bool bit = num & (1 << i);
+		join_bit(bit);
 	}
 }
 
@@ -154,12 +178,12 @@ int main() {
 			switch (instruction_to_enum(instruction)) {
 				case InstructionType::add: {
 					auto registers = getRegisters(3);
+					// cout << registers[0] << ' ' << registers[1] << ' ' << registers[2] << '\n';
+					emit_instruction(InstructionType::add);
 					for (auto elem : registers) {
-						cout << elem << ' ';
+						emit_register(parseIntRegister(elem));
 					}
-					cout << '\n';
 					break;
-					// iiii iiii rrrr rrrr rrrr rrrp pppp pppp
 				}
 				case InstructionType::li: {
 					string currRegister;
@@ -167,7 +191,9 @@ int main() {
 					currRegister = captureWord();
 					jumpOverNonAlNum();
 					int num = captureNumber();
-					cout << currRegister << ' ' << num << '\n';
+					emit_instruction(InstructionType::li);
+					emit_register(parseIntRegister(currRegister));
+					emit_immediate(num, 8);
 					break;
 				}
 				case InstructionType::addi: {
@@ -177,15 +203,21 @@ int main() {
 					string reg2 = captureWord();
 					jumpOverNonAlNum();
 					int num = captureNumber();
-					cout << reg1 << ' ' << reg2 << ' ' << num << '\n';
+					emit_instruction(InstructionType::addi);
+					emit_register(parseIntRegister(reg1));
+					emit_register(parseIntRegister(reg2));
+					emit_immediate(num, 5);
 					break;
 				}
 				case InstructionType::mv: {
 					auto registers = getRegisters(2);
-					cout << registers[0] << ' ' << registers[1] << '\n';
+					emit_instruction(InstructionType::mv);
+					emit_register(parseIntRegister(registers[0]));
+					emit_register(parseIntRegister(registers[1]));
 					break;
 				}
 				case InstructionType::ret: {
+					emit_instruction(InstructionType::ret);
 					break;
 				}
 				case InstructionType::beqz: {
@@ -195,14 +227,16 @@ int main() {
 					string label = captureWord();
 					int direction = label.back() == 'f' ? 1 : -1;
 					label = label.substr(0, label.size() - 1);
-					cout << reg << ' ' << label << ' ' << direction << '\n';
 					break;
 				}
 				case InstructionType::lb: {
 					auto info = get2RegistersOffset();
 					auto regs = info.first;
 					int offset = info.second;
-					cout << regs[0] << ' ' << regs[1] << ' ' << offset << '\n';
+					emit_instruction(InstructionType::lb);
+					emit_register(parseIntRegister(reg[0]));
+					emit_register(parseIntRegister(reg[1]));
+					emit_immediate(offset, 7);
 					break;
 				}
 				case InstructionType::j: {
@@ -424,5 +458,6 @@ int main() {
 			}
 		}
 	}
+	pad_current_byte();
     return 0;
 }
