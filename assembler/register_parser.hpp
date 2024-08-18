@@ -24,4 +24,7 @@ RegisterFloatType parseFloatRegister(const std::string &reg) {
     if(reg == "ft1"){return RegisterFloatType::ft1;}
     if(reg == "ft2"){return RegisterFloatType::ft2;}
     if(reg == "ft3"){return RegisterFloatType::ft3;}
+	if(reg == "fa0"){return RegisterFloatType::fa0;}
+	if(reg == "fa1"){return RegisterFloatType::fa1;}
+	if(reg == "fa2"){return RegisterFloatType::fa2;}
 }

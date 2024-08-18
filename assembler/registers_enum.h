@@ -23,6 +23,9 @@ enum RegisterFloatType {
     ft1,
     ft2,
     ft3,
+    fa0,
+    fa1,
+    fa2,
 };
 
 #endif
