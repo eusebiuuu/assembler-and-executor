@@ -6,7 +6,7 @@ sp
 ra 
 s1 
 
-ft0-ft3 
+ft0-ft3 + fa0-fa2 
 
 4 bit normal registers 0x0 - 0xD
 2 bit float registers 0x0 - 0x3

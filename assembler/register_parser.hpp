@@ -17,6 +17,7 @@ RegisterIntType parseIntRegister(const std::string &reg) {
 	if(reg == "ra"){return RegisterIntType::ra;}
 	if(reg == "sp"){return RegisterIntType::sp;}
 	if(reg == "s1"){return RegisterIntType::s1;}
+	return RegisterIntType::zero;
 }
 
 RegisterFloatType parseFloatRegister(const std::string &reg) {
@@ -27,4 +28,5 @@ RegisterFloatType parseFloatRegister(const std::string &reg) {
 	if(reg == "fa0"){return RegisterFloatType::fa0;}
 	if(reg == "fa1"){return RegisterFloatType::fa1;}
 	if(reg == "fa2"){return RegisterFloatType::fa2;}
+	return RegisterFloatType::ft0;
 }

@@ -16,11 +16,12 @@
 using namespace std;
 ofstream fout("out");
 
-ifstream fin("../inputs/07_Distance_Formula_wo_64-bit_Floats/asm.s");
+ifstream fin("../inputs/12_Calling_a_C_Function_from_Assembly/driver.s");
 ifstream enc("../encoder/encodings.txt");
 unordered_map<InstructionType, string> encodings;
 vector<pair<string, int>> label_address;
-unordered_map<string, pair<int, int>> variables;
+vector<pair<string, string>> variables_list;
+unordered_map<string, int> variable_address;
 
 int current_bit_offset = 0, current_address = 0;
 
@@ -28,6 +29,7 @@ void join_bit(bool bit) {
 	static std::bitset<8> current_byte;
 	current_byte[7 - current_bit_offset] = bit;
 	current_bit_offset++;
+	current_address++;
 	if (current_bit_offset >= 8) {
 		fout << (unsigned char)current_byte.to_ulong();
 		current_bit_offset = 0;
@@ -62,62 +64,129 @@ void emit_register(RegisterFloatType reg) {
 }
 
 void emit_immediate(int num, const int bits_count) {
+	if (num < 0) {
+		num = (1 << bits_count) - abs(num);
+	}
 	for (int i = bits_count - 1; i >= 0; --i) {
 		bool bit = num & (1 << i);
 		join_bit(bit);
 	}
 }
 
-void parseRoData() {
+void emit_variables() {
+	for (auto elem : variables_list) {
+		variable_address[elem.first] = current_address;
+
+		emit_immediate(elem.second.size(), 8);
+		for (char c : elem.second) {
+			emit_immediate(c, 8);
+		}
+	}
+}
+
+
+
+void jump_over_spaces(int &pos, string line) {
+	while (pos < (int) line.size() && isspace(line[pos])) {
+		pos++;
+	}
+}
+
+string get_word(int &pos, string line) {
+	string word;
+	while (pos < (int) line.size() && (isalnum(line[pos]) || line[pos] == '_' || line[pos] == '.')) {
+		word += line[pos++];
+	}
+	return word;
+}
+
+bool is_directive(string line) {
+	int pos = 0;
+	jump_over_spaces(pos, line);
+	if (pos >= (int) line.size() || line[pos] != '.') {
+		return false;
+	}
+	return true;
+}
+
+vector<string> get_directive(string line) {
+	vector<string> info;
+	int pos = line.find('.') + 1;
+	info.push_back(get_word(pos, line));
+	jump_over_spaces(pos, line);
+
+	pos += info[0] == "section";
+
+	info.push_back(get_word(pos, line));
+	cout << "Directive: " << info[0] << ' ' << info[1] << '\n';
+	return info;
+}
+
+bool is_label(string line) {
+	int pos = 0;
+	jump_over_spaces(pos, line);
+	if (pos >= (int) line.size()) {
+		return false;
+	}
+	while (pos < (int) line.size() && (isalnum(line[pos]) || line[pos] == '_')) {
+		pos++;
+	}
+	if (pos >= (int) line.size() || line[pos] != ':') {
+		return false;
+	}
+	return true;
+}
+
+string get_label(string line) {
+	int pos = 0;
+	jump_over_spaces(pos, line);
+	string aux = get_word(pos, line);
+	cout << "Label: " << aux << '\n';
+	return aux;
+}
+
+void parse_rodata() {
 	string line;
 	while (getline(fin, line)) {
-		if (line.empty() || line[0] == '.') break;
-		string label, str;
-		auto pos = line.find(":");
-		label = line.substr(0, pos);
-		pos += 10;
-		str = line.substr(pos, line.size() - 1 - pos);
-        variables[label] = {current_address, str.size()};
-        for (char c : str) {
-            emit_immediate(c, 8);
-            current_address += 8;
-        }
+		if (!is_label(line)) break;
+
+		string label = get_label(line);
+		int pos = line.find(":") + 1;
+		jump_over_spaces(pos, line);
+		get_word(pos, line);
+		jump_over_spaces(pos, line);
+		pos++;
+		int ending_pos = line.find("\"", pos);
+		string str = line.substr(pos, ending_pos - pos);
+
+		cout << "Variable: " << label << ' ' << str << str.size() << '\n';
+        variables_list.push_back({label, str});
+		current_address += (str.size() + 1) * 8;
 	}
 }
 
 void find_labels_addresses() {
 	string line;
     while (getline(fin, line)) {
-		if (line[0] == '.') {
-			if (line[9] != '.' || line[10] != 'r') {
-				continue;
+		if (is_directive(line)) {
+			auto info = get_directive(line);
+			if (info[0] == "section" && info[1] == "rodata") {
+				parse_rodata();
 			}
-			parseRoData();
-		} else if (isalnum(line[0])) {
-			auto pos = line.find(":");
-			string label = line.substr(0, pos);
+		} else if (is_label(line)) {
+			string label = get_label(line);
 			label_address.push_back({label, current_address});
 		} else {
-			int pos = -1;
-			for (int i = 0; i < (int) line.size(); ++i) {
-				if (isspace(line[i])) continue;
-				pos = i;
-				break;
-			}
-
-			if (pos == -1 || line[pos] == '#') {
+			int pos = 0;
+			jump_over_spaces(pos, line);
+			if (pos >= (int) line.size() || line[pos] == '#') {
 				continue;
 			}
 
-			string instruction;
-			while (pos < (int) line.size() && !isspace(line[pos])) {
-				instruction += line[pos++];
-			}
-
+			string instruction = get_word(pos, line);
             current_address += get_instruction_size(instruction_to_enum(instruction)) * 8;
         }
     }
-
     fin.clear();
     fin.seekg(0, fin.beg);
     current_address = 0;
@@ -151,7 +220,7 @@ int get_label_address(string label) {
 	return -1;
 }
 
-void getEncodings() {
+void find_encodings() {
 	string instr, currEnc;
 	while (enc >> instr >> currEnc) {
 		encodings[instruction_to_enum(instr)] = currEnc;
@@ -159,28 +228,31 @@ void getEncodings() {
 }
 
 int main() {
-	getEncodings();
+	find_encodings();
+	current_address = get_instruction_size(InstructionType::j) * 8;
 	find_labels_addresses();
+	
+	int main_address = get_label_address("main");
+	emit_instruction(InstructionType::j);
+	emit_immediate(main_address, 13);
+	pad_current_byte();
+
+	cout << current_address << '\n';
+
+	emit_variables();
+
     string line;
 	while (getline(fin, line)) {
-		if (line[0] == '.' || isalnum(line[0])) {
+		if (is_directive(line) || is_label(line)) {
 			continue;
 		}
-		int pos = -1;
-		for (int i = 0; i < (int) line.size(); ++i) {
-			if (isspace(line[i])) continue;
-			pos = i;
-			break;
-		}
-
-		if (pos == -1 || line[pos] == '#') {
+		int pos = 0;
+		jump_over_spaces(pos, line);
+		if (pos >= (int) line.size() || line[pos] == '#') {
 			continue;
 		}
 
-		string instruction;
-		while (pos < (int) line.size() && !isspace(line[pos])) {
-			instruction += line[pos++];
-		}
+		string instruction = get_word(pos, line);
 		cout << "Instruction: " << instruction << '\n';
 
 		auto captureNumber = [&pos, line]() -> int {
@@ -272,7 +344,7 @@ int main() {
 				emit_instruction(InstructionType::addi);
 				emit_register(parseIntRegister(reg1));
 				emit_register(parseIntRegister(reg2));
-				emit_immediate(num, 5);
+				emit_immediate(num, 13);
 				break;
 			}
 			case InstructionType::mv: {
@@ -388,13 +460,15 @@ int main() {
 				int address = get_label_address(label);
 				if (address != -1) {
 					emit_immediate(address, 13);
+					cout << address << '\n';
 				} else {
 					if (label == "printf") {
+						cout << label << '\n';
 						emit_immediate(0x1F41, 13);
 					} else if (label == "scanf") {
 						emit_immediate(0x1F42, 13);
 					} else {
-						emit_immediate(0x1F43, 13);
+						emit_immediate(0x1FFF, 13);
 					}
 				}
 				break;
@@ -587,11 +661,11 @@ int main() {
 				jumpOverNonAlNum();
 				string label = captureWord();
 				emit_instruction(InstructionType::la);
-				emit_immediate(0, 13);
+				emit_register(parseIntRegister(reg));
+				emit_immediate(variable_address[label], 13);
 				break;
 			}
 		}
-		current_address += get_instruction_size(curr_type) * 8;
 	}
 	pad_current_byte();
     return 0;

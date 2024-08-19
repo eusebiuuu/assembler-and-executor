@@ -9,22 +9,16 @@
    6. <https://github.com/LeusteanAndrei/ProiectASC>
 2. Tasks
    * Assembler
-      * Parse the statements
-      * Registers encoding
-      * C functions issues
-      * Variables storage
-      * Implement the assembler
-         * Registers file
-         * Jumps issues
-         * First instruction is a jump to main
-      * Test the assembler
+      * Test the assembler with driver code
    * Executor
-      1. Registers file
-      2. Program Counter (PC): Manage a program counter to keep track of the current instruction being executed.
-      3. Memory Model: Implement a simple memory model to load and store data. This can be an array representing RAM.
-      4. Every executed file has a state file that consists of registers values and memory
-      5. State file at the end of execution
-      6. Handle Exceptions
+      * Registers file
+      * Stack pointer, stack logic and return
+      * Negative numbers
+      * Program Counter (PC): Manage a program counter to keep track of the current instruction being executed.
+      * Memory Model: Implement a simple memory model to load and store data. This can be an array representing RAM.
+      * Every executed file has a state file that consists of registers values and memory
+      * State file at the end of execution
+      * Handle Exceptions
 3. Project description
    1. [Choose an open source licence](https://choosealicense.com)
    2. Overview

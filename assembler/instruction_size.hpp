@@ -6,7 +6,7 @@
 int get_instruction_size(InstructionType t) {
 	switch(t) {
 		case InstructionType::li: {return 2;}
-		case InstructionType::addi: {return 2;}
+		case InstructionType::addi: {return 3;}
 		case InstructionType::bgt: {return 4;} // 4p
 		case InstructionType::add: {return 2;}
 		case InstructionType::srai: {return 3;}
@@ -33,12 +33,13 @@ int get_instruction_size(InstructionType t) {
 		case InstructionType::fmul_d: {return 2;} // 1p
 		case InstructionType::fadd_d: {return 2;}
 		case InstructionType::fsqrt_d: {return 2;} // 3p
-		case InstructionType::la: {return 2;}
+		case InstructionType::la: {return 3;} // 1p
 		case InstructionType::bnez: {return 3;}
 		case InstructionType::fmv_s_x: {return 2;} // 3p
 		case InstructionType::flw: {return 2;}
 		case InstructionType::fmul_s: {return 2;}
 		case InstructionType::fadd_s: {return 2;}
+		default: {return 0;}
 	}
 }
 #endif

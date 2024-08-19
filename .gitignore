@@ -2,6 +2,7 @@ a.out
 notes.md
 .vscode
 assembler/dumb_parser.hpp
+assembler/out
 assembler/instruction_enum.h
 encoder/freq.txt
 encoder/encodings.txt
