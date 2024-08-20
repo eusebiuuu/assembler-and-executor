@@ -14,9 +14,9 @@
 #include "instruction_size.hpp"
 
 using namespace std;
-ofstream fout("out");
+ofstream fout("memory");
 
-ifstream fin("../inputs/12_Calling_a_C_Function_from_Assembly/driver.s");
+ifstream fin("../inputs/01_String_Length/asm.s");
 ifstream enc("../encoder/encodings.txt");
 unordered_map<InstructionType, string> encodings;
 vector<pair<string, int>> label_address;
@@ -25,19 +25,27 @@ unordered_map<string, int> variable_address;
 
 int current_bit_offset = 0, current_address = 0;
 
+string main_label;
+
 void join_bit(bool bit) {
 	static std::bitset<8> current_byte;
-	current_byte[7 - current_bit_offset] = bit;
+	current_byte[current_bit_offset] = bit;
 	current_bit_offset++;
-	current_address++;
 	if (current_bit_offset >= 8) {
 		fout << (unsigned char)current_byte.to_ulong();
+		current_address++;
 		current_bit_offset = 0;
 	}
 }
 
 void pad_current_byte() {
 	while (current_bit_offset) {
+		join_bit(0);
+	}
+}
+
+void pad_bytes(int sz) {
+	while (current_address < sz) {
 		join_bit(0);
 	}
 }
@@ -49,28 +57,22 @@ void emit_instruction(InstructionType instruction) {
 	}
 }
 
-void emit_register(RegisterIntType reg) {
-	for (int bit = 3; bit >= 0; --bit) {
-		bool val = reg & (1 << bit);
-		join_bit(val);
-	}
-}
-
-void emit_register(RegisterFloatType reg) {
-	for (int bit = 2; bit >= 0; --bit) {
-		bool val = reg & (1 << bit);
-		join_bit(val);
-	}
-}
-
 void emit_immediate(int num, const int bits_count) {
 	if (num < 0) {
 		num = (1 << bits_count) - abs(num);
 	}
-	for (int i = bits_count - 1; i >= 0; --i) {
+	for (int i = 0; i < bits_count; ++i) {
 		bool bit = num & (1 << i);
 		join_bit(bit);
 	}
+}
+
+void emit_register(RegisterIntType reg) {
+	emit_immediate(reg, 4);
+}
+
+void emit_register(RegisterFloatType reg) {
+	emit_immediate(reg, 3);
 }
 
 void emit_variables() {
@@ -161,7 +163,7 @@ void parse_rodata() {
 
 		cout << "Variable: " << label << ' ' << str << str.size() << '\n';
         variables_list.push_back({label, str});
-		current_address += (str.size() + 1) * 8;
+		current_address += str.size() + 1;
 	}
 }
 
@@ -170,7 +172,9 @@ void find_labels_addresses() {
     while (getline(fin, line)) {
 		if (is_directive(line)) {
 			auto info = get_directive(line);
-			if (info[0] == "section" && info[1] == "rodata") {
+			if (info[0] == "global") {
+				main_label = info[1];
+			} else if (info[1] == "rodata") {
 				parse_rodata();
 			}
 		} else if (is_label(line)) {
@@ -184,7 +188,7 @@ void find_labels_addresses() {
 			}
 
 			string instruction = get_word(pos, line);
-            current_address += get_instruction_size(instruction_to_enum(instruction)) * 8;
+            current_address += get_instruction_size(instruction_to_enum(instruction));
         }
     }
     fin.clear();
@@ -229,17 +233,17 @@ void find_encodings() {
 
 int main() {
 	find_encodings();
-	current_address = get_instruction_size(InstructionType::j) * 8;
+	current_address = MEMORY_SIZE;
 	find_labels_addresses();
 	
-	int main_address = get_label_address("main");
+	int main_address = get_label_address(main_label);
 	emit_instruction(InstructionType::j);
-	emit_immediate(main_address, 13);
+	emit_immediate(main_address, ADDRESS_SIZE);
 	pad_current_byte();
 
-	cout << current_address << '\n';
-
 	emit_variables();
+
+	pad_bytes(MEMORY_SIZE);
 
     string line;
 	while (getline(fin, line)) {
@@ -369,7 +373,7 @@ int main() {
 
 				emit_instruction(InstructionType::beqz);
 				emit_register(parseIntRegister(reg));
-				emit_immediate(get_closest_address(label, current_address, direction), 13);
+				emit_immediate(get_closest_address(label, current_address, direction), ADDRESS_SIZE);
 				break;
 			}
 			case InstructionType::lb: {
@@ -390,7 +394,7 @@ int main() {
 				label = label.substr(0, label.size() - 1);
 
 				emit_instruction(InstructionType::j);
-				emit_immediate(get_closest_address(label, current_address, direction), 13);
+				emit_immediate(get_closest_address(label, current_address, direction), ADDRESS_SIZE);
 				break;
 			}
 			case InstructionType::sb: {
@@ -417,7 +421,7 @@ int main() {
 				emit_instruction(InstructionType::bge);
 				emit_register(parseIntRegister(reg1));
 				emit_register(parseIntRegister(reg2));
-				emit_immediate(get_closest_address(label, current_address, direction), 13);
+				emit_immediate(get_closest_address(label, current_address, direction), ADDRESS_SIZE);
 				break;
 			}
 			case InstructionType::sub: {
@@ -459,16 +463,14 @@ int main() {
 				emit_instruction(InstructionType::call);
 				int address = get_label_address(label);
 				if (address != -1) {
-					emit_immediate(address, 13);
-					cout << address << '\n';
+					emit_immediate(address, ADDRESS_SIZE);
 				} else {
 					if (label == "printf") {
-						cout << label << '\n';
-						emit_immediate(0x1F41, 13);
+						emit_immediate(TOTAL_MEMORY + 1, ADDRESS_SIZE);
 					} else if (label == "scanf") {
-						emit_immediate(0x1F42, 13);
+						emit_immediate(TOTAL_MEMORY + 2, ADDRESS_SIZE);
 					} else {
-						emit_immediate(0x1FFF, 13);
+						emit_immediate(0xFFFF, ADDRESS_SIZE);
 					}
 				}
 				break;
@@ -515,7 +517,7 @@ int main() {
 				label = label.substr(0, label.size() - 1);
 				emit_instruction(InstructionType::bnez);
 				emit_register(parseIntRegister(reg));
-				emit_immediate(get_closest_address(label, current_address, direction), 13);
+				emit_immediate(get_closest_address(label, current_address, direction), ADDRESS_SIZE);
 				break;
 			}
 			case InstructionType::ble: {
@@ -530,7 +532,7 @@ int main() {
 				emit_instruction(InstructionType::ble);
 				emit_register(parseIntRegister(reg1));
 				emit_register(parseIntRegister(reg2));
-				emit_immediate(get_closest_address(label, current_address, direction), 13);
+				emit_immediate(get_closest_address(label, current_address, direction), ADDRESS_SIZE);
 				break;
 			}
 			case InstructionType::fld: {
@@ -619,7 +621,7 @@ int main() {
 				emit_instruction(InstructionType::bgt);
 				emit_register(parseIntRegister(reg1));
 				emit_register(parseIntRegister(reg2));
-				emit_immediate(get_closest_address(label, current_address, direction), 13);
+				emit_immediate(get_closest_address(label, current_address, direction), ADDRESS_SIZE);
 				break;
 			}
 			case InstructionType::fmv_s_x: {
@@ -662,11 +664,11 @@ int main() {
 				string label = captureWord();
 				emit_instruction(InstructionType::la);
 				emit_register(parseIntRegister(reg));
-				emit_immediate(variable_address[label], 13);
+				emit_immediate(variable_address[label], ADDRESS_SIZE);
 				break;
 			}
 		}
 	}
-	pad_current_byte();
+	pad_bytes(BINARY_SIZE + MEMORY_SIZE + STACK_SIZE);
     return 0;
 }

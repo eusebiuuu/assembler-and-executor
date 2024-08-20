@@ -28,4 +28,12 @@ enum RegisterFloatType {
     fa2,
 };
 
+int const INT_REGISTER_COUNT = RegisterIntType::s1 + 1;
+
+int const FLOAT_REGISTER_COUNT = RegisterFloatType::fa2 + 1;
+
+int const INT_REGISTER_BITS = 4;
+
+int const FLOAT_REGISTER_BITS = 3;
+
 #endif

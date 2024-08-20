@@ -1,3 +1,6 @@
+.section .rodata
+string: .asciz "Hello world!"
+
 .section .text
 .global strlen
 strlen:
@@ -12,3 +15,9 @@ strlen:
 1: # End of for loop
     mv     a0, t0        # Move t0 into a0 to return
     ret                  # Return back via the return address register
+
+.global main
+main:
+    la a0, string
+    call strlen
+    ret # returning from main will exit the program

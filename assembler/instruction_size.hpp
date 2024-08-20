@@ -42,4 +42,11 @@ int get_instruction_size(InstructionType t) {
 		default: {return 0;}
 	}
 }
+
+int const STACK_SIZE = 1000, MEMORY_SIZE = 1000, BINARY_SIZE = 2000;
+
+int const TOTAL_MEMORY = STACK_SIZE + MEMORY_SIZE + BINARY_SIZE;
+
+int const ADDRESS_SIZE = 13;
+
 #endif
