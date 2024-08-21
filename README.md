@@ -2,16 +2,18 @@
 
 1. Tasks
    * Executor
-      * Execute the instructions: call functions and stack update, stack workflow - sp register, access variables
-      * Jump to last label from global directive at the start of the program
-      * Initial state file: remove drivers, registers (read them), stack
-      * State file at the end of execution: registers, stack
+      * Test the assembler: each instruction, all possible cases
+      * Test the interpreter: each instruction, all possible cases
+      * State file at the end of execution: registers and stack
    * Testing
-      * Define commands to concatenate, assemble and execute the statements
-      * Test the assembler
+      * Project structure refactoring
+      * Complete the asm programs (add printf and scanf) & remove the drivers
+      * Define commands to test the programs (assemble and execute the statements)
+      * Test the emulator with various inputs
    * Improvements
-      * Handle exceptions in executor
-      * Create a better parser
+      * Improve the parser and the interpreter for more general uses & handle exceptions
+      * Create a lexer
+      * Brainstorm other ideas
       * Explore other projects
          * <https://github.com/Proiect-ASC/riscv-emulator>
          * <https://github.com/Stefan-101/RISC-Assembler-and-Interpreter>

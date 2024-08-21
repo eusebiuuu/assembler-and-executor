@@ -163,7 +163,6 @@ void parse_rodata() {
 
 		cout << "Variable: " << label << ' ' << str << str.size() << '\n';
         variables_list.push_back({label, str});
-		current_address += str.size() + 1;
 	}
 }
 
@@ -235,10 +234,15 @@ int main() {
 	find_encodings();
 	current_address = MEMORY_SIZE;
 	find_labels_addresses();
+
+	for (auto elem : label_address) {
+		cout << elem.first << ' ' << elem.second << '\n';
+	}
 	
 	int main_address = get_label_address(main_label);
 	emit_instruction(InstructionType::j);
 	emit_immediate(main_address, ADDRESS_SIZE);
+	cout << main_address << '\n';
 	pad_current_byte();
 
 	emit_variables();
@@ -469,8 +473,10 @@ int main() {
 						emit_immediate(TOTAL_MEMORY + 1, ADDRESS_SIZE);
 					} else if (label == "scanf") {
 						emit_immediate(TOTAL_MEMORY + 2, ADDRESS_SIZE);
+					} else if (label == "strlen") {
+						emit_immediate(TOTAL_MEMORY + 3, ADDRESS_SIZE);
 					} else {
-						emit_immediate(0xFFFF, ADDRESS_SIZE);
+						emit_immediate(INVALID_FUNCTION_CALL, ADDRESS_SIZE);
 					}
 				}
 				break;
