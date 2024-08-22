@@ -7,41 +7,60 @@
 #include <functional>
 #include <cmath>
 #include <cstring>
+#include <iomanip>
 
-#include "../assembler/instruction_enum.h"
-#include "../assembler/dumb_parser.hpp"
-#include "../assembler/register_parser.hpp"
-#include "../assembler/registers_enum.h"
-#include "../assembler/instruction_size.hpp"
-
-#define ll long long
+#include "../utils/instruction_enum.h"
+#include "../utils/dumb_parser.hpp"
+#include "../utils/register_parser.hpp"
+#include "../utils/registers_enum.h"
+#include "../utils/instruction_size.hpp"
 
 using namespace std;
 
-fstream file("../assembler/memory");
+fstream file("../outputs/binary");
+ofstream fout("../outputs/exit_state_file.txt");
 ifstream enc("../encoder/encodings.txt");
-unordered_map<string, InstructionType> instr;
+ifstream int_reg("../utils/int_registers.txt");
+ifstream float_reg("../utils/float_registers.txt");
 
-array<ll, INT_REGISTER_COUNT> int_register_value;
-array<ll, FLOAT_REGISTER_COUNT> float_register_value;
+unordered_map<string, InstructionType> instr;
+array<string, INT_REGISTER_COUNT> int_register_name;
+array<string, FLOAT_REGISTER_COUNT> float_register_name;
+
+array<uint64_t, INT_REGISTER_COUNT> int_register_value;
+array<uint64_t, FLOAT_REGISTER_COUNT> float_register_value;
 
 int counter = 0;
 
-const ll MAX_UINT = ((1LL << 32) - 1);
+const uint64_t MAX_UINT = ((1LL << 32) - 1);
 
-void find_encodings() {
+void find_instructions() {
 	string curr_instr, curr_encoding;
 	while (enc >> curr_instr >> curr_encoding) {
 		instr[curr_encoding] = instruction_to_enum(curr_instr);
 	}
-    enc.close();
+}
+
+void get_int_register_names() {
+    string reg;
+    while (int_reg >> reg) {
+        int_register_name[parseIntRegister(reg)] = reg;
+    }
+}
+
+void get_float_register_names() {
+    string reg;
+    while (float_reg >> reg) {
+        float_register_name[parseFloatRegister(reg)] = reg;
+    }
 }
 
 bitset<32> get_full_instruction(bitset<8> curr_byte, int cnt) {
     bitset<32> instruction_encoding = curr_byte.to_ulong();
-    int pos = 0;
+    int pos = 8;
     for (int _ = 1; _ < cnt; ++_) {
         char byte;
+        file.seekg(counter + _);
         file.read(&byte, 1);
         bitset<8> curr_byte = byte;
         for (int i = 0; i < 8; ++i) {
@@ -54,15 +73,12 @@ bitset<32> get_full_instruction(bitset<8> curr_byte, int cnt) {
 string get_string_variable(int address) {
     file.seekg(address);
     char byte;
-    file.read(&byte, 1);
-    int len = (int) byte;
-    address++;
-
     string ans;
-    for (int i = 0; i < len; ++i) {
-        file.seekg(address + i);
-        file.read(&byte, 1);
+
+    file.read(&byte, 1);
+    while (byte != 0) {
         ans += byte;
+        file.read(&byte, 1);
     }
     return ans;
 }
@@ -71,16 +87,12 @@ int get_format_func_params(string s) {
     string formats[] = {"%ld", "%d", "%hu", "%s"};
     int total_count = 0;
     for (auto str : formats) {
-        string::size_type pos = 0;
-        while ((pos = s.find(str, pos)) != string::npos) {
-            total_count++;
-            pos += str.length();
-        }
+        
     }
     return total_count;
 }
 
-void store_number_at_address(ll num, ll address, int bytes) {
+void store_number_at_address(uint64_t num, uint64_t address, int bytes) {
     for (int i = 0; i < bytes; ++i) {
         file.seekp(address);
         unsigned char curr_num = num & 255;
@@ -90,7 +102,17 @@ void store_number_at_address(ll num, ll address, int bytes) {
     }
 }
 
-void load_number_from_address(ll &dest, ll address, int bytes) {
+void store_string_at_address(string str, uint32_t address) {
+    str += '\0';
+    int sz = str.size();
+    for (int i = 0; i < sz; ++i) {
+        file.seekp(address);
+        file.put(str[i]);
+        address++;
+    }
+}
+
+void load_number_from_address(uint64_t &dest, uint64_t address, int bytes) {
     dest = 0;
     for (int i = 0; i < bytes; ++i) {
         file.seekg(address);
@@ -98,20 +120,20 @@ void load_number_from_address(ll &dest, ll address, int bytes) {
         file.read(&byte, 1);
         bitset<8> curr_byte = byte;
         for (int j = 0; j < 8; ++j) {
-            dest |= (1 << (8 * i) + j);
+            dest |= (1ULL << ((8 * i) + j)) * curr_byte[j];
         }
         address++;
     }
 }
 
-float convert_to_float(ll num) {
+float convert_to_float(uint64_t num) {
     uint32_t good_num = num & MAX_UINT;
     float ans;
     memcpy(&ans, &good_num, sizeof(good_num));
     return ans;
 }
 
-double convert_to_double(ll num) {
+double convert_to_double(uint64_t num) {
     double ans;
     memcpy(&ans, &num, sizeof(num));
     return ans;
@@ -123,21 +145,28 @@ int convert_to_int(float num) {
     return ans;
 }
 
-ll convert_to_long_long(double num) {
-    ll ans;
+uint64_t convert_to_long_long(double num) {
+    uint64_t ans;
     memcpy(&ans, &num, sizeof(num));
     return ans;
 }
 
 int main() {
-    find_encodings();
+    find_instructions();
 
     int_register_value[RegisterIntType::sp] = TOTAL_MEMORY - STACK_STEP + 1;
     int_register_value[RegisterIntType::ra] = EXIT_ADDRESS;
 
     bool exit_program = false;
 
+    int limit = 100;
+
     while (!exit_program) {
+        limit--;
+        if (limit == 0) {
+            break;
+        }
+        cout << counter << '\n';
         if (counter == EXIT_ADDRESS) {
             exit_program = true;
             break;
@@ -151,7 +180,7 @@ int main() {
         while (instr.find(curr_encoding) == instr.end()) {
             curr_encoding += curr_byte[pos++] + '0';
         }
-        cout << curr_encoding << ' ' << instr[curr_encoding] << '\n';
+        cout << "Instruction code: " << instr[curr_encoding] << '\n';
         InstructionType curr_instruction = instr[curr_encoding];
         auto instruction_encoding = get_full_instruction(curr_byte, get_instruction_size(curr_instruction));
 
@@ -260,62 +289,37 @@ int main() {
                     int_register_value[RegisterIntType::ra] = counter;
                     counter = address;
                 } else if (address == TOTAL_MEMORY + 1)  {
-                    string aux = get_string_variable(int_register_value[RegisterIntType::a0]);
-                    int params = get_format_func_params(aux);
-                    const char *format_string = aux.c_str();
-                    cout << format_string << ' ' << params << '\n';
-                    switch (params) {
-                        case 0: {
-                            printf("%s", format_string);
-                            break;
-                        }
-                        case 1: {
-                            printf(format_string, int_register_value[RegisterIntType::a1]);
-                            break;
-                        }
-                        case 2: {
-                            printf(format_string, int_register_value[RegisterIntType::a1], int_register_value[RegisterIntType::a2]);
-                            break;
-                        }
-                        case 3: {
-                            printf(format_string, int_register_value[RegisterIntType::a1], int_register_value[RegisterIntType::a2], int_register_value[RegisterIntType::a3]);
-                            break;
-                        }
-                        default: {
-                            cerr << "[ERROR]: Printf has too many params to handle\n";
-                            break;
-                        }
+                    string format_string = get_string_variable(int_register_value[RegisterIntType::a0]);
+                    string::size_type pos = 0;
+                    bool print_string = format_string.find("%s", 0) != string::npos;
+                    bool print_int = format_string.find("%d", 0) != string::npos;
+                    if (!print_string && !print_int) {
+                        printf("%s", format_string.c_str());
+                    } else if (print_string) {
+                        string string_to_print = get_string_variable(int_register_value[RegisterIntType::a1]);
+                        printf(format_string.c_str(), string_to_print.c_str());
+                    } else if (print_int) {
+                        printf(format_string.c_str(), int_register_value[RegisterIntType::a1]);
+                    } else {
+                        cerr << "[ERROR]: Due to the limitations of the project the interpreter cannot execute your instruction\n";
                     }
                 } else if (address == TOTAL_MEMORY + 2) {
-                    string aux = get_string_variable(int_register_value[RegisterIntType::a0]);
-                    int params = get_format_func_params(aux);
-                    const char *format_string = aux.c_str();
-                    cout << format_string << ' ' << params << '\n';
-                    int const MAX_PARAMS = 3;
-                    int arr[MAX_PARAMS];
-                    switch (params) {
-                        case 1: {
-                            scanf(format_string, &arr[0]);
-                            store_number_at_address(arr[0], int_register_value[RegisterIntType::a1], STACK_STEP);
-                            break;
-                        }
-                        case 2: {
-                            scanf(format_string, &arr[0], &arr[1]);
-                            store_number_at_address(arr[0], int_register_value[RegisterIntType::a1], STACK_STEP);
-                            store_number_at_address(arr[1], int_register_value[RegisterIntType::a2], STACK_STEP);
-                            break;
-                        }
-                        case 3: {
-                            scanf(format_string, &arr[0], &arr[1], &arr[2]);
-                            store_number_at_address(arr[0], int_register_value[RegisterIntType::a1], STACK_STEP);
-                            store_number_at_address(arr[1], int_register_value[RegisterIntType::a2], STACK_STEP);
-                            store_number_at_address(arr[2], int_register_value[RegisterIntType::a3], STACK_STEP);
-                            break;
-                        }
-                        default: {
-                            cerr << "[ERROR]: Scanf has too many params to handle\n";
-                            break;
-                        }
+                    string format_string = get_string_variable(int_register_value[RegisterIntType::a0]);
+                    cout << format_string << '\n';
+                    string::size_type pos = 0;
+                    bool print_string = format_string.find("%s", 0) != string::npos;
+                    bool print_int = format_string.find("%d", 0) != string::npos;
+                    if (print_string) {
+                        char input[MAX_STRING_LEN];
+                        scanf(format_string.c_str(), input);
+                        string str_input(input);
+                        store_string_at_address(input, int_register_value[RegisterIntType::a1]);
+                    } else if (print_int) {
+                        int num;
+                        scanf(format_string.c_str(), &num);
+                        store_number_at_address(num, int_register_value[RegisterIntType::a1], 8);
+                    } else {
+                        cerr << "[ERROR]: Due to the limitations of the project the interpreter cannot execute your instruction\n";
                     }
                 } else if (address == TOTAL_MEMORY + 3) {
                     string str = get_string_variable(int_register_value[RegisterIntType::s1]);
@@ -470,7 +474,25 @@ int main() {
                 break;
             }
         }
-        break;
+    }
+    get_int_register_names();
+    get_float_register_names();
+    fout << "INT registers: \n";
+    for (int i = 0; i < INT_REGISTER_COUNT; ++i) {
+        fout << int_register_name[i] << ": " << int_register_value[i] << '\n';
+    }
+    fout << "\nFLOAT registers: \n";
+    for (int i = 0; i < FLOAT_REGISTER_COUNT; ++i) {
+        fout << float_register_name[i] << ": " << float_register_value[i] << '\n';
+    }
+    fout << "\nSTACK: \n";
+    int stack_pointer = int_register_value[RegisterIntType::sp];
+    while (stack_pointer >= MEMORY_SIZE + BINARY_SIZE) {
+        uint64_t curr_num = 0;
+        load_number_from_address(curr_num, stack_pointer, STACK_STEP);
+        fout << "0x" << uppercase << setw(4) << setfill('0') << hex << stack_pointer << ": ";
+        fout << "0x" << uppercase << setw(16) << setfill('0') << hex << curr_num << '\n';
+        stack_pointer -= STACK_STEP;
     }
     return 0;
 }

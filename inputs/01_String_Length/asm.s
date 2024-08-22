@@ -1,8 +1,9 @@
 .section .rodata
-string: .asciz "Hello world!"
+input_format: .asciz "%s"
+output_format: .asciz "The length of the input string is %d.\n"
+store: .space 256
 
 .section .text
-.global strlen
 strlen:
     # a0 = const char *str
     li     t0, 0         # i = 0
@@ -18,6 +19,17 @@ strlen:
 
 .global main
 main:
-    la a0, string
+    sd ra, 0(sp)
+    la a0, input_format
+    la a1, store
+    call scanf
+
+    la a0, store
     call strlen
-    ret # returning from main will exit the program
+
+    mv a1, a0
+    la a0, output_format
+    call printf
+
+    ld ra, 0(sp)
+    ret

@@ -7,25 +7,27 @@
 #include <unordered_map>
 #include <bitset>
 
-#include "instruction_enum.h"
-#include "dumb_parser.hpp"
-#include "register_parser.hpp"
-#include "registers_enum.h"
-#include "instruction_size.hpp"
+#include "../utils/instruction_enum.h"
+#include "../utils/dumb_parser.hpp"
+#include "../utils/register_parser.hpp"
+#include "../utils/registers_enum.h"
+#include "../utils/instruction_size.hpp"
 
 using namespace std;
-ofstream fout("memory");
+ofstream fout("../outputs/binary");
 
 ifstream fin("../inputs/01_String_Length/asm.s");
 ifstream enc("../encoder/encodings.txt");
+
 unordered_map<InstructionType, string> encodings;
 vector<pair<string, int>> label_address;
 vector<pair<string, string>> variables_list;
+vector<pair<string, int>> store_spaces;
 unordered_map<string, int> variable_address;
 
 int current_bit_offset = 0, current_address = 0;
 
-string main_label;
+const string main_label = "main";
 
 void join_bit(bool bit) {
 	static std::bitset<8> current_byte;
@@ -79,10 +81,27 @@ void emit_variables() {
 	for (auto elem : variables_list) {
 		variable_address[elem.first] = current_address;
 
-		emit_immediate(elem.second.size(), 8);
-		for (char c : elem.second) {
+		int sz = elem.second.size();
+		string real_string;
+		for (int i = 0; i < sz; ++i) {
+			if (elem.second[i] == '\\' && i + 1 < sz && elem.second[i + 1] == 'n') {
+				real_string += '\n';
+				i++;
+				continue;
+			}
+			real_string += elem.second[i];
+		}
+		
+		real_string += '\0';
+		
+		for (char c : real_string) {
 			emit_immediate(c, 8);
 		}
+	}
+
+	for (auto elem : store_spaces) {
+		variable_address[elem.first] = current_address;
+		pad_bytes(current_address + elem.second);
 	}
 }
 
@@ -100,6 +119,14 @@ string get_word(int &pos, string line) {
 		word += line[pos++];
 	}
 	return word;
+}
+
+int get_number(int &pos, string line) {
+	int num = 0;
+	while (pos < (int) line.size() && '0' <= line[pos] && line[pos] <= '9') {
+		num = num * 10 + (line[pos++] - '0');
+	}
+	return num;
 }
 
 bool is_directive(string line) {
@@ -155,14 +182,21 @@ void parse_rodata() {
 		string label = get_label(line);
 		int pos = line.find(":") + 1;
 		jump_over_spaces(pos, line);
-		get_word(pos, line);
-		jump_over_spaces(pos, line);
-		pos++;
-		int ending_pos = line.find("\"", pos);
-		string str = line.substr(pos, ending_pos - pos);
+		string var_type = get_word(pos, line);
 
-		cout << "Variable: " << label << ' ' << str << str.size() << '\n';
-        variables_list.push_back({label, str});
+		if (var_type == ".asciz") {
+			jump_over_spaces(pos, line);
+			pos++;
+			int ending_pos = line.find("\"", pos);
+			string str = line.substr(pos, ending_pos - pos);
+			variables_list.push_back({label, str});
+		} else if (var_type == ".space") {
+			jump_over_spaces(pos, line);
+			int memory_size = get_number(pos, line);
+			store_spaces.push_back({label, memory_size});
+		} else {
+			cerr << "[ERROR]: Invalid variable type\n";
+		}
 	}
 }
 
@@ -171,9 +205,7 @@ void find_labels_addresses() {
     while (getline(fin, line)) {
 		if (is_directive(line)) {
 			auto info = get_directive(line);
-			if (info[0] == "global") {
-				main_label = info[1];
-			} else if (info[1] == "rodata") {
+			if (info[0] == "section" && info[1] == "rodata") {
 				parse_rodata();
 			}
 		} else if (is_label(line)) {
@@ -223,7 +255,7 @@ int get_label_address(string label) {
 	return -1;
 }
 
-void find_encodings() {
+void find_instructions() {
 	string instr, currEnc;
 	while (enc >> instr >> currEnc) {
 		encodings[instruction_to_enum(instr)] = currEnc;
@@ -231,18 +263,14 @@ void find_encodings() {
 }
 
 int main() {
-	find_encodings();
+	find_instructions();
 	current_address = MEMORY_SIZE;
 	find_labels_addresses();
-
-	for (auto elem : label_address) {
-		cout << elem.first << ' ' << elem.second << '\n';
-	}
 	
 	int main_address = get_label_address(main_label);
 	emit_instruction(InstructionType::j);
 	emit_immediate(main_address, ADDRESS_SIZE);
-	cout << main_address << '\n';
+	cout << "Main address: " << main_address << '\n';
 	pad_current_byte();
 
 	emit_variables();

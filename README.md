@@ -1,15 +1,10 @@
 # Assembler-and-executor
 
 1. Tasks
-   * Executor
-      * Test the assembler: each instruction, all possible cases
-      * Test the interpreter: each instruction, all possible cases
-      * State file at the end of execution: registers and stack
    * Testing
-      * Project structure refactoring
-      * Complete the asm programs (add printf and scanf) & remove the drivers
+      * Complete the asm programs
       * Define commands to test the programs (assemble and execute the statements)
-      * Test the emulator with various inputs
+      * Test the emulator with the given inputs
    * Improvements
       * Improve the parser and the interpreter for more general uses & handle exceptions
       * Create a lexer
@@ -27,7 +22,7 @@
       * Purpose
       * General workflow
       * Technologies and tools
-      * CPU specifics: alignment, memory, registers, variables, stack, endianness, jump to main, add more
+      * CPU specifics: alignment, memory, registers, variables, stack, endianness, jump to main, buffer size, encodings dataset, limitations (printf, scanf) add more
       * Code structure
       * Technical decisions
       * Performance

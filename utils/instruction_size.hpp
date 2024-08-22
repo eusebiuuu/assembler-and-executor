@@ -16,7 +16,7 @@ int get_instruction_size(InstructionType t) {
 		case InstructionType::j: {return 3;} // 7p
 		case InstructionType::bge: {return 4;} // 7p
 		case InstructionType::mv: {return 2;} // 3p
-		case InstructionType::ret: {return 2;} // 4p
+		case InstructionType::ret: {return 1;} // 4p
 		case InstructionType::sd: {return 3;}
 		case InstructionType::call: {return 3;} // 6p
 		case InstructionType::sub: {return 3;} // 5p
@@ -49,6 +49,6 @@ int const TOTAL_MEMORY = STACK_SIZE + MEMORY_SIZE + BINARY_SIZE;
 
 int const ADDRESS_SIZE = 13, INVALID_FUNCTION_CALL = 0XFFF;
 
-int const STACK_STEP = 8, EXIT_ADDRESS = 0XFFF;
+int const STACK_STEP = 8, EXIT_ADDRESS = 0XFFF, MAX_STRING_LEN = 256;
 
 #endif
