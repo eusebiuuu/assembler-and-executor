@@ -1,3 +1,8 @@
+.section .rodata
+input_format_string: .asciz "%s"
+output_format: .asciz "The new string is %s.\n"
+string: .space 256
+
 .section .text
 .global strrev
 strrev:
@@ -32,4 +37,24 @@ strrev:
     ld      s1, 8(sp)
     ld      ra, 0(sp)
     addi    sp, sp, 16
+    ret
+
+.global main
+main:
+    sd ra, 0(sp)
+    addi sp, sp, -8
+
+    la a0, input_format_string
+    la a1, string
+    call scanf
+
+    la a0, string
+    call strrev
+
+    la a1, string
+    la a0, output_format
+    call printf
+
+    addi sp, sp, 8
+    ld ra, 0(sp)
     ret

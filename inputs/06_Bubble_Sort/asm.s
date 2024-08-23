@@ -1,3 +1,9 @@
+.section .rodata
+input_format_int: .asciz "%lld"
+output_format: .asciz "Next number: %lld\n"
+size: .space 4
+array: .space 256
+
 .section .text
 .global bubsort
 bubsort:
@@ -25,3 +31,51 @@ bubsort:
 2: # bottom of do loop body
     bnez t0, 1b       # loop if swapped = true
     ret               # return via return address register
+
+main:
+    sd ra, 0(sp)
+
+    la a0, input_format_int
+    la a1, size
+    call scanf
+
+    la a1, size
+    lw t0, 0(a1)
+    la t1, array
+
+read_array:
+    beqz t0, sortf
+
+    la a0, input_format_int
+    mv a1, t1
+    call scanf
+
+    addi t0, t0, -1
+    addi t1, t1, 8
+    j read_arrayb
+
+sort:
+    la a0, array
+    la a1, size
+    lw a1, 0(a1)
+    call bubsort
+    
+    la a1, size
+    lw t0, 0(a1)
+    la t1, array
+    lw a1, 0(t1)
+
+print_array:
+    beqz t0, exitf
+
+    la a0, output_format
+    lw a1, 0(t1)
+    call printf
+
+    addi t0, t0, -1
+    addi t1, t1, 8
+
+    j print_arrayb
+exit:
+    ld ra, 0(sp)
+    ret

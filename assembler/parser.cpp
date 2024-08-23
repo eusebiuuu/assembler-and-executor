@@ -14,9 +14,8 @@
 #include "../utils/instruction_size.hpp"
 
 using namespace std;
-ofstream fout("../outputs/binary");
 
-ifstream fin("../inputs/01_String_Length/asm.s");
+ofstream fout("../outputs/binary");
 ifstream enc("../encoder/encodings.txt");
 
 unordered_map<InstructionType, string> encodings;
@@ -147,7 +146,6 @@ vector<string> get_directive(string line) {
 	pos += info[0] == "section";
 
 	info.push_back(get_word(pos, line));
-	cout << "Directive: " << info[0] << ' ' << info[1] << '\n';
 	return info;
 }
 
@@ -170,11 +168,10 @@ string get_label(string line) {
 	int pos = 0;
 	jump_over_spaces(pos, line);
 	string aux = get_word(pos, line);
-	cout << "Label: " << aux << '\n';
 	return aux;
 }
 
-void parse_rodata() {
+void parse_rodata(ifstream &fin) {
 	string line;
 	while (getline(fin, line)) {
 		if (!is_label(line)) break;
@@ -200,13 +197,13 @@ void parse_rodata() {
 	}
 }
 
-void find_labels_addresses() {
+void find_labels_addresses(ifstream &fin) {
 	string line;
     while (getline(fin, line)) {
 		if (is_directive(line)) {
 			auto info = get_directive(line);
 			if (info[0] == "section" && info[1] == "rodata") {
-				parse_rodata();
+				parse_rodata(fin);
 			}
 		} else if (is_label(line)) {
 			string label = get_label(line);
@@ -262,15 +259,18 @@ void find_instructions() {
 	}
 }
 
-int main() {
+int main(int argc, char *argv[]) {
+	string path(argv[0]);
+	path = "../" + path;
+	ifstream fin(path);
+
 	find_instructions();
 	current_address = MEMORY_SIZE;
-	find_labels_addresses();
+	find_labels_addresses(fin);
 	
 	int main_address = get_label_address(main_label);
 	emit_instruction(InstructionType::j);
 	emit_immediate(main_address, ADDRESS_SIZE);
-	cout << "Main address: " << main_address << '\n';
 	pad_current_byte();
 
 	emit_variables();
@@ -320,7 +320,7 @@ int main() {
 
 		auto captureLabel = [&pos, line]() -> string {
 			string label;
-			while (pos < (int) line.size() && isalnum(line[pos])) {
+			while (pos < (int) line.size() && (isalnum(line[pos]) || line[pos] == '_')) {
 				label += line[pos++];
 			}
 			return label;
@@ -662,7 +662,7 @@ int main() {
 				auto registers = getRegisters(2);
 				emit_instruction(InstructionType::fmv_s_x);
 				emit_register(parseFloatRegister(registers[0]));
-				emit_register(parseFloatRegister(registers[1]));
+				emit_register(parseIntRegister(registers[1]));
 				break;
 			}
 			case InstructionType::fmul_s: {

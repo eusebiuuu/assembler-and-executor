@@ -1,6 +1,1 @@
-a.out
-notes.md
 .vscode
-utils/dumb_parser.hpp
-utils/instruction_enum.h
-encoder/freq.txt

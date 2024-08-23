@@ -1,3 +1,9 @@
+.section .rodata
+input_format: .asciz "%lf"
+output_format: .asciz "Distance: %lf\n"
+point_1: .space 16
+point_2: .space 16
+
 .section .text
 .global distance
 distance:
@@ -21,3 +27,39 @@ distance:
     fsqrt.d fa0, ft0      # fa0 = sqrt(ft0)
     # Return value goes in fa0
     ret                   # Return
+
+main:
+    sd ra, 0(sp)
+
+    la a0, input_format
+    la a1, point_1
+    call scanf
+
+    la a0, input_format
+    la a1, point_1
+    addi a1, a1, 8
+    call scanf
+
+    la a0, input_format
+    la a1, point_2
+    call scanf
+
+    la a0, input_format
+    la a1, point_2
+    addi a1, a1, 8
+    call scanf
+
+    la a0, point_1
+    la a1, point_2
+    call distance
+
+    addi sp, sp, -8
+    fsw fa0, 0(sp)
+    ld a1, 0(sp)
+    addi sp, sp, 8
+    
+    la a0, output_format
+    call printf
+
+    ld ra, 0(sp)
+    ret

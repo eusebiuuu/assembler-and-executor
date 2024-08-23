@@ -35,7 +35,7 @@ int get_instruction_size(InstructionType t) {
 		case InstructionType::fsqrt_d: {return 2;} // 3p
 		case InstructionType::la: {return 3;} // 1p
 		case InstructionType::bnez: {return 3;}
-		case InstructionType::fmv_s_x: {return 2;} // 3p
+		case InstructionType::fmv_s_x: {return 2;} // 2p
 		case InstructionType::flw: {return 2;}
 		case InstructionType::fmul_s: {return 2;}
 		case InstructionType::fadd_s: {return 2;}

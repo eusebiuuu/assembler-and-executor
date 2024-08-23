@@ -1,3 +1,9 @@
+.section .rodata
+input_format: .asciz "%s"
+output_format: .asciz "The string at the new address is %s.\n"
+string: .space 256
+new_address: .space 256
+
 .section .text
 .global stringcopy
 stringcopy:
@@ -13,3 +19,21 @@ stringcopy:
     j       1b           # Go back to the start of the loop
 1:
     ret                  # Return back via the return address
+
+.global main
+main:
+    sd ra, 0(sp)
+    la a0, input_format
+    la a1, string
+    call scanf
+
+    la a1, string
+    la a0, new_address
+    call stringcopy
+
+    la a1, new_address
+    la a0, output_format
+    call printf
+
+    ld ra, 0(sp)
+    ret

@@ -1,3 +1,11 @@
+.section .rodata
+input_format_string: .asciz "%s"
+input_format_int: .asciz "%d"
+output_format: .asciz "The new string is %s.\n"
+count: .space 4
+string: .space 256
+new_address: .space 256
+
 .section .text
 .global strncpy
 strncpy:
@@ -25,3 +33,27 @@ strncpy:
     # we don't have to move anything since
     # a0 hasn't changed.
     ret                  # return via return address register
+
+.global main
+main:
+    sd ra, 0(sp)
+    la a0, input_format_string
+    la a1, string
+    call scanf
+
+    la a0, input_format_int
+    la a1, count
+    call scanf
+
+    la a0, new_address
+    la a1, string
+    la t0, count
+    lw a2, 0(t0)
+    call strncpy
+
+    la a1, new_address
+    la a0, output_format
+    call printf
+
+    ld ra, 0(sp)
+    ret

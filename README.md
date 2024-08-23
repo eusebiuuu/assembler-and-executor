@@ -2,9 +2,8 @@
 
 1. Tasks
    * Testing
-      * Complete the asm programs
+      * Complete the asm programs (also, test 5, 6, 7, 8 - offset size (general), int/float registers (general))
       * Define commands to test the programs (assemble and execute the statements)
-      * Test the emulator with the given inputs
    * Improvements
       * Improve the parser and the interpreter for more general uses & handle exceptions
       * Create a lexer

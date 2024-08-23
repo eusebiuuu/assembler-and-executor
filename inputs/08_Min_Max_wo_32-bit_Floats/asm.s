@@ -1,3 +1,11 @@
+.section .rodata
+input_format: .asciz "%f"
+output_format_min: .asciz "Minimum is: %f\n"
+output_format_max: .asciz "Maximum is: %f\n"
+num_1: .space 4
+num_2: .space 4
+num_3: .space 4
+
 .section .text
 .global minmax
 minmax:
@@ -38,3 +46,46 @@ minmax:
     fsw     ft0, 0(a0)    # store minimum into &mn
     fsw     ft1, 0(a1)    # store maximum into &mx
     ret                   # return via return address register
+
+main:
+    sd ra, 0(sp)
+
+    la a0, input_format
+    la a1, num_1
+    call scanf
+
+    la a0, input_format
+    la a1, num_2
+    call scanf
+
+    la a0, input_format
+    la a1, num_3
+    call scanf
+
+    la a0, num_1
+    lw a0, 0(a0)
+    fmv.s.x fa0, a0
+
+    la a0, num_2
+    lw a0, 0(a0)
+    fmv.s.x fa1, a0
+
+    la a0, num_3
+    lw a0, 0(a0)
+    fmv.s.x fa2, a0
+
+    call minmax
+
+    mv t0, a0
+    mv t1, a1
+
+    la a0, output_format_min
+    lw a1, 0(t0)
+    call printf
+
+    la a0, output_format_max
+    lw a1, 0(t1)
+    call printf
+
+    ld ra, 0(sp)
+    ret

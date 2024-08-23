@@ -24,6 +24,7 @@ ifstream int_reg("../utils/int_registers.txt");
 ifstream float_reg("../utils/float_registers.txt");
 
 unordered_map<string, InstructionType> instr;
+
 array<string, INT_REGISTER_COUNT> int_register_name;
 array<string, FLOAT_REGISTER_COUNT> float_register_name;
 
@@ -139,8 +140,8 @@ double convert_to_double(uint64_t num) {
     return ans;
 }
 
-int convert_to_int(float num) {
-    int ans;
+uint32_t convert_to_int(float num) {
+    uint32_t ans;
     memcpy(&ans, &num, sizeof(num));
     return ans;
 }
@@ -162,11 +163,10 @@ int main() {
     int limit = 100;
 
     while (!exit_program) {
-        limit--;
-        if (limit == 0) {
-            break;
-        }
-        cout << counter << '\n';
+        // limit--;
+        // if (limit == 0) {
+        //     break;
+        // }
         if (counter == EXIT_ADDRESS) {
             exit_program = true;
             break;
@@ -293,36 +293,62 @@ int main() {
                     string::size_type pos = 0;
                     bool print_string = format_string.find("%s", 0) != string::npos;
                     bool print_int = format_string.find("%d", 0) != string::npos;
-                    if (!print_string && !print_int) {
+                    bool print_long_long = format_string.find("%lld", 0) != string::npos;
+                    bool print_double = format_string.find("%lf", 0) != string::npos;
+                    bool print_float = format_string.find("%f", 0) != string::npos;
+                    bool all_false = !print_string && !print_int && !print_double && !print_long_long && !print_float;
+                    if (all_false) {
                         printf("%s", format_string.c_str());
                     } else if (print_string) {
                         string string_to_print = get_string_variable(int_register_value[RegisterIntType::a1]);
                         printf(format_string.c_str(), string_to_print.c_str());
                     } else if (print_int) {
                         printf(format_string.c_str(), int_register_value[RegisterIntType::a1]);
+                    } else if (print_long_long) {
+                        printf(format_string.c_str(), int_register_value[RegisterIntType::a1]);
+                    } else if (print_double) {
+                        printf(format_string.c_str(), convert_to_double(int_register_value[RegisterIntType::a1]));
+                    } else if (print_float) {
+                        printf(format_string.c_str(), convert_to_float(int_register_value[RegisterIntType::a1]));
                     } else {
                         cerr << "[ERROR]: Due to the limitations of the project the interpreter cannot execute your instruction\n";
                     }
                 } else if (address == TOTAL_MEMORY + 2) {
                     string format_string = get_string_variable(int_register_value[RegisterIntType::a0]);
-                    cout << format_string << '\n';
                     string::size_type pos = 0;
-                    bool print_string = format_string.find("%s", 0) != string::npos;
-                    bool print_int = format_string.find("%d", 0) != string::npos;
-                    if (print_string) {
+                    bool read_string = format_string.find("%s", 0) != string::npos;
+                    bool read_int = format_string.find("%d", 0) != string::npos;
+                    bool read_long_long = format_string.find("%lld", 0) != string::npos;
+                    bool read_double = format_string.find("%lf", 0) != string::npos;
+                    bool read_float = format_string.find("%f", 0) != string::npos;
+                    if (read_string) {
                         char input[MAX_STRING_LEN];
                         scanf(format_string.c_str(), input);
                         string str_input(input);
                         store_string_at_address(input, int_register_value[RegisterIntType::a1]);
-                    } else if (print_int) {
+                    } else if (read_int) {
                         int num;
                         scanf(format_string.c_str(), &num);
+                        store_number_at_address(num, int_register_value[RegisterIntType::a1], 4);
+                    } else if (read_long_long) {
+                        uint64_t num;
+                        scanf(format_string.c_str(), &num);
                         store_number_at_address(num, int_register_value[RegisterIntType::a1], 8);
+                    } else if (read_double) {
+                        double num;
+                        scanf(format_string.c_str(), &num);
+                        uint64_t number_to_store = convert_to_long_long(num);
+                        store_number_at_address(number_to_store, int_register_value[RegisterIntType::a1], 8);
+                    } else if (read_float) {
+                        float num;
+                        scanf(format_string.c_str(), &num);
+                        uint64_t number_to_store = convert_to_int(num);
+                        store_number_at_address(number_to_store, int_register_value[RegisterIntType::a1], 4);
                     } else {
                         cerr << "[ERROR]: Due to the limitations of the project the interpreter cannot execute your instruction\n";
                     }
                 } else if (address == TOTAL_MEMORY + 3) {
-                    string str = get_string_variable(int_register_value[RegisterIntType::s1]);
+                    string str = get_string_variable(int_register_value[RegisterIntType::a0]);
                     int_register_value[RegisterIntType::a0] = str.length();
                 } else {
                     cerr << "[ERROR]: Invalid function call\n";
@@ -348,6 +374,7 @@ int main() {
                 int reg2 = get_number(INT_REGISTER_BITS);
                 int offset = get_number(3 + 8, -1);
                 load_number_from_address(int_register_value[reg1], offset + int_register_value[reg2], 4);
+                // cout << "Load value: " << int_register_value[reg1] << '\n';
                 break;
             }
             case InstructionType::bnez: {
@@ -370,7 +397,7 @@ int main() {
             case InstructionType::fld: {
                 int reg1 = get_number(FLOAT_REGISTER_BITS);
                 int reg2 = get_number(INT_REGISTER_BITS);
-                int offset = get_number(4, -1);
+                int offset = get_number(4);
                 load_number_from_address(float_register_value[reg1], offset + int_register_value[reg2], 8);
                 break;
             }
@@ -442,8 +469,8 @@ int main() {
             }
             case InstructionType::fmv_s_x: {
                 int reg1 = get_number(FLOAT_REGISTER_BITS);
-                int reg2 = get_number(FLOAT_REGISTER_BITS);
-                float_register_value[reg1] = float_register_value[reg2] & MAX_UINT;
+                int reg2 = get_number(INT_REGISTER_BITS);
+                float_register_value[reg1] = convert_to_int(convert_to_float(int_register_value[reg2]));
                 break;
             }
             case InstructionType::fmul_s: {
@@ -471,6 +498,7 @@ int main() {
                 int reg = get_number(INT_REGISTER_BITS);
                 int address = get_number(ADDRESS_SIZE);
                 int_register_value[reg] = address;
+                // cout << "Load address la: " << address << '\n';
                 break;
             }
         }
