@@ -16,8 +16,8 @@
 
 using namespace std;
 
-ofstream fout("../outputs/binary");
-ifstream enc("../encoder/encodings.txt");
+ofstream fout;
+ifstream enc;
 
 unordered_map<InstructionType, string> encodings;
 vector<pair<string, int>> label_address;
@@ -261,9 +261,9 @@ void find_instructions() {
 }
 
 int main(int argc, char *argv[]) {
-	string path(argv[0]);
-	path = "../" + path;
-	ifstream fin(path);
+	ifstream fin(argv[1]);
+	fout.open(argv[2]);
+	enc.open(argv[3]);
 
 	find_instructions();
 	current_address = MEMORY_SIZE;

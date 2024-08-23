@@ -18,11 +18,11 @@
 
 using namespace std;
 
-fstream file("../outputs/binary");
-ofstream fout("../outputs/exit_state_file.txt");
-ifstream enc("../encoder/encodings.txt");
-ifstream int_reg("../utils/int_registers.txt");
-ifstream float_reg("../utils/float_registers.txt");
+fstream file;
+ofstream fout;
+ifstream enc;
+ifstream int_reg;
+ifstream float_reg;
 
 unordered_map<string, InstructionType> instr;
 
@@ -153,7 +153,13 @@ uint64_t convert_to_long_long(double num) {
     return ans;
 }
 
-int main() {
+int main(int argc, char* argv[]) {
+    file.open(argv[1]);
+    fout.open(argv[2]);
+    enc.open(argv[3]);
+    int_reg.open(argv[4]);
+    float_reg.open(argv[5]);
+
     find_instructions();
 
     int_register_value[(int)RegisterIntType::sp] = TOTAL_MEMORY - STACK_STEP + 1;
