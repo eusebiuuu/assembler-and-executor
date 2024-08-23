@@ -1,1 +1,10 @@
 .vscode
+
+utils/instruction_enum.h
+utils/dumb_parser.hpp
+
+outputs/*
+!outputs/.gitkeep
+
+encoder/freq.txt
+encoder/encodings.txt
