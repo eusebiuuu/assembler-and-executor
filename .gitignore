@@ -9,3 +9,5 @@ outputs/*
 encoder/freq.txt
 encoder/encodings.txt
 __pycache__
+
+a.out

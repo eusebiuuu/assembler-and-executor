@@ -1,59 +1,78 @@
-#include <iostream>
 #include <fstream>
 #include <string>
 #include <queue>
 #include <vector>
 #include <algorithm>
-std::ifstream fin("freq.txt");
-const std::string DUMMY_NODE = ".";
 
-std::vector<std::pair<std::string, std::string>> encoding;
+struct Instruction {
+    std::string name;
+    std::string encoding;
+};
+
+std::vector<Instruction> encodings;
 
 struct Node {
     std::string name;
     double prob;
-    Node *leftChild, *rightChild;
-    Node(double p, const std::string &str = DUMMY_NODE): name(str), prob(p), leftChild(nullptr), rightChild(nullptr) {}
+
+    Node* left;
+    Node* right;
+    
+    Node(double p, const std::string& str = "")
+        : name(str), prob(p), left(nullptr), right(nullptr)
+    {}
 };
 
-struct NodepCmp {
-    bool operator()(Node* a, Node* b) const {
-        return a->prob > b->prob;
-    }
-};
-
-void goThroughTree(Node *currNode, std::string currEncoding) {
-    if (currNode->name != DUMMY_NODE) {
-        encoding.push_back({currNode->name, currEncoding});
+void goThroughTree(Node* root, std::string currEncoding) {
+    if (root->name != "") {
+        encodings.push_back({root->name, currEncoding});
         return;
     }
-    goThroughTree(currNode->leftChild, currEncoding + "0");
-    goThroughTree(currNode->rightChild, currEncoding + "1");
+
+    goThroughTree(root->left, currEncoding + "0");
+    goThroughTree(root->right, currEncoding + "1");
 }
 
 int main() {
-    double prob;
-    std::string operation;
-    std::priority_queue<Node*, std::vector<Node*>, NodepCmp> minProb;
-    while (fin >> operation) {
-        fin >> prob;
-        Node *newNode = new Node(prob, operation);
-        minProb.push(newNode);
+    auto node_ptr_comparator = [](Node* a, Node* b) { return a->prob > b->prob; };
+    std::priority_queue<Node*, std::vector<Node*>, decltype(node_ptr_comparator)> minProb(node_ptr_comparator);
+
+    {
+        std::ifstream fin("./freq.txt");
+        
+        std::string operation;
+        double prob;
+        while (fin >> operation >> prob) {
+            Node *newNode = new Node(prob, operation);
+            
+            minProb.push(newNode);
+        }
+        
+        fin.close();
     }
+
     while (minProb.size() > 1) {
-        auto leftNode = minProb.top();
-        minProb.pop();
-        auto rightNode = minProb.top();
-        minProb.pop();
-        auto newNode = new Node(leftNode->prob + rightNode->prob);
-        newNode->leftChild = leftNode;
-        newNode->rightChild = rightNode;
+        Node* leftNode = minProb.top(); minProb.pop();
+        Node* rightNode = minProb.top(); minProb.pop();
+
+        Node* newNode = new Node(leftNode->prob + rightNode->prob);
+        newNode->left = leftNode;
+        newNode->right = rightNode;
+
         minProb.push(newNode);
     }
+
     goThroughTree(minProb.top(), "");
-    std::sort(encoding.begin(), encoding.end(), [](auto& l, auto& r){ return l.second.length() < r.second.length(); });
-    for (auto elem : encoding) {
-        std::cout << elem.first << '\t' << elem.second << '\n';
+    
+    std::sort(encodings.begin(), encodings.end(), [](auto& l, auto& r){ return l.encoding.length() < r.encoding.length(); });
+    
+    {
+        std::ofstream fout("./encodings.txt");
+
+        for (const Instruction& instruction : encodings) {
+            fout << instruction.name << ' ' << instruction.encoding << '\n';
+        }
+        
+        fout.close();
     }
-    return 0;
 }
