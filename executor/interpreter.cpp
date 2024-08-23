@@ -9,11 +9,12 @@
 #include <cstring>
 #include <iomanip>
 
-#include "../utils/instruction_enum.h"
+#include "../utils/instruction_enum.hpp"
 #include "../utils/dumb_parser.hpp"
 #include "../utils/register_parser.hpp"
-#include "../utils/registers_enum.h"
+#include "../utils/registers_enum.hpp"
 #include "../utils/instruction_size.hpp"
+#include "../utils/cpu_spec.hpp"
 
 using namespace std;
 
@@ -45,14 +46,14 @@ void find_instructions() {
 void get_int_register_names() {
     string reg;
     while (int_reg >> reg) {
-        int_register_name[parseIntRegister(reg)] = reg;
+        int_register_name[(int)parseIntRegister(reg)] = reg;
     }
 }
 
 void get_float_register_names() {
     string reg;
     while (float_reg >> reg) {
-        float_register_name[parseFloatRegister(reg)] = reg;
+        float_register_name[(int)parseFloatRegister(reg)] = reg;
     }
 }
 
@@ -155,8 +156,8 @@ uint64_t convert_to_long_long(double num) {
 int main() {
     find_instructions();
 
-    int_register_value[RegisterIntType::sp] = TOTAL_MEMORY - STACK_STEP + 1;
-    int_register_value[RegisterIntType::ra] = EXIT_ADDRESS;
+    int_register_value[(int)RegisterIntType::sp] = TOTAL_MEMORY - STACK_STEP + 1;
+    int_register_value[(int)RegisterIntType::ra] = EXIT_ADDRESS;
 
     bool exit_program = false;
 
@@ -180,7 +181,7 @@ int main() {
         while (instr.find(curr_encoding) == instr.end()) {
             curr_encoding += curr_byte[pos++] + '0';
         }
-        cout << "Instruction code: " << instr[curr_encoding] << '\n';
+        cout << "Instruction code: " << (int)instr[curr_encoding] << '\n';
         InstructionType curr_instruction = instr[curr_encoding];
         auto instruction_encoding = get_full_instruction(curr_byte, get_instruction_size(curr_instruction));
 
@@ -223,7 +224,7 @@ int main() {
                 break;
             }
             case InstructionType::ret: {
-                counter = int_register_value[RegisterIntType::ra];
+                counter = int_register_value[(int)RegisterIntType::ra];
                 break;
             }
             case InstructionType::beqz: {
@@ -286,10 +287,10 @@ int main() {
             case InstructionType::call: {
                 int address = get_number(ADDRESS_SIZE);
                 if (address < TOTAL_MEMORY) {
-                    int_register_value[RegisterIntType::ra] = counter;
+                    int_register_value[(int)RegisterIntType::ra] = counter;
                     counter = address;
                 } else if (address == TOTAL_MEMORY + 1)  {
-                    string format_string = get_string_variable(int_register_value[RegisterIntType::a0]);
+                    string format_string = get_string_variable(int_register_value[(int)RegisterIntType::a0]);
                     string::size_type pos = 0;
                     bool print_string = format_string.find("%s", 0) != string::npos;
                     bool print_int = format_string.find("%d", 0) != string::npos;
@@ -300,21 +301,21 @@ int main() {
                     if (all_false) {
                         printf("%s", format_string.c_str());
                     } else if (print_string) {
-                        string string_to_print = get_string_variable(int_register_value[RegisterIntType::a1]);
+                        string string_to_print = get_string_variable(int_register_value[(int)RegisterIntType::a1]);
                         printf(format_string.c_str(), string_to_print.c_str());
                     } else if (print_int) {
-                        printf(format_string.c_str(), int_register_value[RegisterIntType::a1]);
+                        printf(format_string.c_str(), int_register_value[(int)RegisterIntType::a1]);
                     } else if (print_long_long) {
-                        printf(format_string.c_str(), int_register_value[RegisterIntType::a1]);
+                        printf(format_string.c_str(), int_register_value[(int)RegisterIntType::a1]);
                     } else if (print_double) {
-                        printf(format_string.c_str(), convert_to_double(int_register_value[RegisterIntType::a1]));
+                        printf(format_string.c_str(), convert_to_double(int_register_value[(int)RegisterIntType::a1]));
                     } else if (print_float) {
-                        printf(format_string.c_str(), convert_to_float(int_register_value[RegisterIntType::a1]));
+                        printf(format_string.c_str(), convert_to_float(int_register_value[(int)RegisterIntType::a1]));
                     } else {
                         cerr << "[ERROR]: Due to the limitations of the project the interpreter cannot execute your instruction\n";
                     }
                 } else if (address == TOTAL_MEMORY + 2) {
-                    string format_string = get_string_variable(int_register_value[RegisterIntType::a0]);
+                    string format_string = get_string_variable(int_register_value[(int)RegisterIntType::a0]);
                     string::size_type pos = 0;
                     bool read_string = format_string.find("%s", 0) != string::npos;
                     bool read_int = format_string.find("%d", 0) != string::npos;
@@ -325,31 +326,31 @@ int main() {
                         char input[MAX_STRING_LEN];
                         scanf(format_string.c_str(), input);
                         string str_input(input);
-                        store_string_at_address(input, int_register_value[RegisterIntType::a1]);
+                        store_string_at_address(input, int_register_value[(int)RegisterIntType::a1]);
                     } else if (read_int) {
                         int num;
                         scanf(format_string.c_str(), &num);
-                        store_number_at_address(num, int_register_value[RegisterIntType::a1], 4);
+                        store_number_at_address(num, int_register_value[(int)RegisterIntType::a1], 4);
                     } else if (read_long_long) {
                         uint64_t num;
                         scanf(format_string.c_str(), &num);
-                        store_number_at_address(num, int_register_value[RegisterIntType::a1], 8);
+                        store_number_at_address(num, int_register_value[(int)RegisterIntType::a1], 8);
                     } else if (read_double) {
                         double num;
                         scanf(format_string.c_str(), &num);
                         uint64_t number_to_store = convert_to_long_long(num);
-                        store_number_at_address(number_to_store, int_register_value[RegisterIntType::a1], 8);
+                        store_number_at_address(number_to_store, int_register_value[(int)RegisterIntType::a1], 8);
                     } else if (read_float) {
                         float num;
                         scanf(format_string.c_str(), &num);
                         uint64_t number_to_store = convert_to_int(num);
-                        store_number_at_address(number_to_store, int_register_value[RegisterIntType::a1], 4);
+                        store_number_at_address(number_to_store, int_register_value[(int)RegisterIntType::a1], 4);
                     } else {
                         cerr << "[ERROR]: Due to the limitations of the project the interpreter cannot execute your instruction\n";
                     }
                 } else if (address == TOTAL_MEMORY + 3) {
-                    string str = get_string_variable(int_register_value[RegisterIntType::a0]);
-                    int_register_value[RegisterIntType::a0] = str.length();
+                    string str = get_string_variable(int_register_value[(int)RegisterIntType::a0]);
+                    int_register_value[(int)RegisterIntType::a0] = str.length();
                 } else {
                     cerr << "[ERROR]: Invalid function call\n";
                 }
@@ -514,7 +515,7 @@ int main() {
         fout << float_register_name[i] << ": " << float_register_value[i] << '\n';
     }
     fout << "\nSTACK: \n";
-    int stack_pointer = int_register_value[RegisterIntType::sp];
+    int stack_pointer = int_register_value[(int)RegisterIntType::sp];
     while (stack_pointer >= MEMORY_SIZE + BINARY_SIZE) {
         uint64_t curr_num = 0;
         load_number_from_address(curr_num, stack_pointer, STACK_STEP);

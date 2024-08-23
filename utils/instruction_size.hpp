@@ -1,6 +1,5 @@
-#ifndef INSTRUCTION_SIZE_ENUM
-#define INSTRUCTION_SIZE_ENUM
-#include "./instruction_enum.h"
+#pragma once
+#include "./instruction_enum.hpp"
 #include <string>
 
 int get_instruction_size(InstructionType t) {
@@ -39,16 +38,6 @@ int get_instruction_size(InstructionType t) {
 		case InstructionType::flw: {return 2;}
 		case InstructionType::fmul_s: {return 2;}
 		case InstructionType::fadd_s: {return 2;}
-		default: {return 0;}
+		default: {throw std::runtime_error("Failed to get instruction size for instruction: '" + std::to_string((int)t) + "'");}
 	}
 }
-
-int const STACK_SIZE = 1000, MEMORY_SIZE = 1000, BINARY_SIZE = 2000;
-
-int const TOTAL_MEMORY = STACK_SIZE + MEMORY_SIZE + BINARY_SIZE;
-
-int const ADDRESS_SIZE = 13, INVALID_FUNCTION_CALL = 0XFFF;
-
-int const STACK_STEP = 8, EXIT_ADDRESS = 0XFFF, MAX_STRING_LEN = 256;
-
-#endif

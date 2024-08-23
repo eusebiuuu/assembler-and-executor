@@ -7,11 +7,12 @@
 #include <unordered_map>
 #include <bitset>
 
-#include "../utils/instruction_enum.h"
+#include "../utils/instruction_enum.hpp"
 #include "../utils/dumb_parser.hpp"
 #include "../utils/register_parser.hpp"
-#include "../utils/registers_enum.h"
+#include "../utils/registers_enum.hpp"
 #include "../utils/instruction_size.hpp"
+#include "../utils/cpu_spec.hpp"
 
 using namespace std;
 
@@ -69,11 +70,11 @@ void emit_immediate(int num, const int bits_count) {
 }
 
 void emit_register(RegisterIntType reg) {
-	emit_immediate(reg, 4);
+	emit_immediate((int)reg, 4);
 }
 
 void emit_register(RegisterFloatType reg) {
-	emit_immediate(reg, 3);
+	emit_immediate((int)reg, 3);
 }
 
 void emit_variables() {

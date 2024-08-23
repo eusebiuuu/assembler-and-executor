@@ -1,8 +1,8 @@
 #pragma once
-#include "registers_enum.h"
-#include "string"
+#include "registers_enum.hpp"
+#include <string>
 
-RegisterIntType parseIntRegister(const std::string &reg) {
+RegisterIntType parseIntRegister(const std::string& reg) {
     if(reg == "zero"){return RegisterIntType::zero;}
 	if(reg == "t0"){return RegisterIntType::t0;}
 	if(reg == "t1"){return RegisterIntType::t1;}
@@ -17,10 +17,10 @@ RegisterIntType parseIntRegister(const std::string &reg) {
 	if(reg == "ra"){return RegisterIntType::ra;}
 	if(reg == "sp"){return RegisterIntType::sp;}
 	if(reg == "s1"){return RegisterIntType::s1;}
-	return RegisterIntType::zero;
+	throw std::runtime_error("Failed to parse Int register: '" + reg + "'");
 }
 
-RegisterFloatType parseFloatRegister(const std::string &reg) {
+RegisterFloatType parseFloatRegister(const std::string& reg) {
     if(reg == "ft0"){return RegisterFloatType::ft0;}
     if(reg == "ft1"){return RegisterFloatType::ft1;}
     if(reg == "ft2"){return RegisterFloatType::ft2;}
@@ -28,5 +28,5 @@ RegisterFloatType parseFloatRegister(const std::string &reg) {
 	if(reg == "fa0"){return RegisterFloatType::fa0;}
 	if(reg == "fa1"){return RegisterFloatType::fa1;}
 	if(reg == "fa2"){return RegisterFloatType::fa2;}
-	return RegisterFloatType::ft0;
+	throw std::runtime_error("Failed to parse Float register: '" + reg + "'");
 }

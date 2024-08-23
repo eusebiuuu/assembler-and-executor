@@ -1,6 +1,6 @@
 .vscode
 
-utils/instruction_enum.h
+utils/instruction_enum.hpp
 utils/dumb_parser.hpp
 
 outputs/*
