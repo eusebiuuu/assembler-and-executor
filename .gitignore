@@ -8,3 +8,4 @@ outputs/*
 
 encoder/freq.txt
 encoder/encodings.txt
+__pycache__
