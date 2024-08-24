@@ -16,55 +16,53 @@
 #include "../utils/instruction_size.hpp"
 #include "../utils/cpu_spec.hpp"
 
-using namespace std;
+std::fstream file;
+std::ofstream fout;
+std::ifstream enc;
+std::ifstream int_reg;
+std::ifstream float_reg;
 
-fstream file;
-ofstream fout;
-ifstream enc;
-ifstream int_reg;
-ifstream float_reg;
+std::unordered_map<std::string, InstructionType> instr;
 
-unordered_map<string, InstructionType> instr;
+std::array<std::string, INT_REGISTER_COUNT> int_register_name;
+std::array<std::string, FLOAT_REGISTER_COUNT> float_register_name;
 
-array<string, INT_REGISTER_COUNT> int_register_name;
-array<string, FLOAT_REGISTER_COUNT> float_register_name;
-
-array<uint64_t, INT_REGISTER_COUNT> int_register_value;
-array<uint64_t, FLOAT_REGISTER_COUNT> float_register_value;
+std::array<uint64_t, INT_REGISTER_COUNT> int_register_value;
+std::array<uint64_t, FLOAT_REGISTER_COUNT> float_register_value;
 
 int counter = 0;
 
 const uint64_t MAX_UINT = ((1LL << 32) - 1);
 
 void find_instructions() {
-	string curr_instr, curr_encoding;
+	std::string curr_instr, curr_encoding;
 	while (enc >> curr_instr >> curr_encoding) {
 		instr[curr_encoding] = instruction_to_enum(curr_instr);
 	}
 }
 
 void get_int_register_names() {
-    string reg;
+    std::string reg;
     while (int_reg >> reg) {
         int_register_name[(int)parseIntRegister(reg)] = reg;
     }
 }
 
 void get_float_register_names() {
-    string reg;
+    std::string reg;
     while (float_reg >> reg) {
         float_register_name[(int)parseFloatRegister(reg)] = reg;
     }
 }
 
-bitset<32> get_full_instruction(bitset<8> curr_byte, int cnt) {
-    bitset<32> instruction_encoding = curr_byte.to_ulong();
+std::bitset<32> get_full_instruction(std::bitset<8> curr_byte, int cnt) {
+    std::bitset<32> instruction_encoding = curr_byte.to_ulong();
     int pos = 8;
     for (int _ = 1; _ < cnt; ++_) {
         char byte;
         file.seekg(counter + _);
         file.read(&byte, 1);
-        bitset<8> curr_byte = byte;
+        std::bitset<8> curr_byte = byte;
         for (int i = 0; i < 8; ++i) {
             instruction_encoding[pos++] = curr_byte[i];
         }
@@ -72,10 +70,10 @@ bitset<32> get_full_instruction(bitset<8> curr_byte, int cnt) {
     return instruction_encoding;
 }
 
-string get_string_variable(int address) {
+std::string get_string_variable(int address) {
     file.seekg(address);
     char byte;
-    string ans;
+    std::string ans;
 
     file.read(&byte, 1);
     while (byte != 0) {
@@ -85,8 +83,8 @@ string get_string_variable(int address) {
     return ans;
 }
 
-int get_format_func_params(string s) {
-    string formats[] = {"%ld", "%d", "%hu", "%s"};
+int get_format_func_params(std::string s) {
+    std::string formats[] = {"%ld", "%d", "%hu", "%s"};
     int total_count = 0;
     for (auto str : formats) {
         
@@ -104,7 +102,7 @@ void store_number_at_address(uint64_t num, uint64_t address, int bytes) {
     }
 }
 
-void store_string_at_address(string str, uint32_t address) {
+void store_string_at_address(std::string str, uint32_t address) {
     str += '\0';
     int sz = str.size();
     for (int i = 0; i < sz; ++i) {
@@ -120,7 +118,7 @@ void load_number_from_address(uint64_t &dest, uint64_t address, int bytes) {
         file.seekg(address);
         char byte;
         file.read(&byte, 1);
-        bitset<8> curr_byte = byte;
+        std::bitset<8> curr_byte = byte;
         for (int j = 0; j < 8; ++j) {
             dest |= (1ULL << ((8 * i) + j)) * curr_byte[j];
         }
@@ -181,13 +179,13 @@ int main(int argc, char* argv[]) {
         file.seekg(counter);
         char byte;
         file.read(&byte, 1);
-        bitset<8> curr_byte = byte;
-        string curr_encoding;
+        std::bitset<8> curr_byte = byte;
+        std::string curr_encoding;
         int pos = 0;
         while (instr.find(curr_encoding) == instr.end()) {
             curr_encoding += curr_byte[pos++] + '0';
         }
-        cout << "Instruction code: " << (int)instr[curr_encoding] << '\n';
+        std::cout << "Instruction code: " << (int)instr[curr_encoding] << '\n';
         InstructionType curr_instruction = instr[curr_encoding];
         auto instruction_encoding = get_full_instruction(curr_byte, get_instruction_size(curr_instruction));
 
@@ -296,18 +294,18 @@ int main(int argc, char* argv[]) {
                     int_register_value[(int)RegisterIntType::ra] = counter;
                     counter = address;
                 } else if (address == TOTAL_MEMORY + 1)  {
-                    string format_string = get_string_variable(int_register_value[(int)RegisterIntType::a0]);
-                    string::size_type pos = 0;
-                    bool print_string = format_string.find("%s", 0) != string::npos;
-                    bool print_int = format_string.find("%d", 0) != string::npos;
-                    bool print_long_long = format_string.find("%lld", 0) != string::npos;
-                    bool print_double = format_string.find("%lf", 0) != string::npos;
-                    bool print_float = format_string.find("%f", 0) != string::npos;
+                    std::string format_string = get_string_variable(int_register_value[(int)RegisterIntType::a0]);
+                    std::string::size_type pos = 0;
+                    bool print_string = format_string.find("%s", 0) != std::string::npos;
+                    bool print_int = format_string.find("%d", 0) != std::string::npos;
+                    bool print_long_long = format_string.find("%lld", 0) != std::string::npos;
+                    bool print_double = format_string.find("%lf", 0) != std::string::npos;
+                    bool print_float = format_string.find("%f", 0) != std::string::npos;
                     bool all_false = !print_string && !print_int && !print_double && !print_long_long && !print_float;
                     if (all_false) {
                         printf("%s", format_string.c_str());
                     } else if (print_string) {
-                        string string_to_print = get_string_variable(int_register_value[(int)RegisterIntType::a1]);
+                        std::string string_to_print = get_string_variable(int_register_value[(int)RegisterIntType::a1]);
                         printf(format_string.c_str(), string_to_print.c_str());
                     } else if (print_int) {
                         printf(format_string.c_str(), int_register_value[(int)RegisterIntType::a1]);
@@ -318,20 +316,20 @@ int main(int argc, char* argv[]) {
                     } else if (print_float) {
                         printf(format_string.c_str(), convert_to_float(int_register_value[(int)RegisterIntType::a1]));
                     } else {
-                        cerr << "[ERROR]: Due to the limitations of the project the interpreter cannot execute your instruction\n";
+                        std::cerr << "[ERROR]: Due to the limitations of the project the interpreter cannot execute your instruction\n";
                     }
                 } else if (address == TOTAL_MEMORY + 2) {
-                    string format_string = get_string_variable(int_register_value[(int)RegisterIntType::a0]);
-                    string::size_type pos = 0;
-                    bool read_string = format_string.find("%s", 0) != string::npos;
-                    bool read_int = format_string.find("%d", 0) != string::npos;
-                    bool read_long_long = format_string.find("%lld", 0) != string::npos;
-                    bool read_double = format_string.find("%lf", 0) != string::npos;
-                    bool read_float = format_string.find("%f", 0) != string::npos;
+                    std::string format_string = get_string_variable(int_register_value[(int)RegisterIntType::a0]);
+                    std::string::size_type pos = 0;
+                    bool read_string = format_string.find("%s", 0) != std::string::npos;
+                    bool read_int = format_string.find("%d", 0) != std::string::npos;
+                    bool read_long_long = format_string.find("%lld", 0) != std::string::npos;
+                    bool read_double = format_string.find("%lf", 0) != std::string::npos;
+                    bool read_float = format_string.find("%f", 0) != std::string::npos;
                     if (read_string) {
                         char input[MAX_STRING_LEN];
                         scanf(format_string.c_str(), input);
-                        string str_input(input);
+                        std::string str_input(input);
                         store_string_at_address(input, int_register_value[(int)RegisterIntType::a1]);
                     } else if (read_int) {
                         int num;
@@ -352,13 +350,13 @@ int main(int argc, char* argv[]) {
                         uint64_t number_to_store = convert_to_int(num);
                         store_number_at_address(number_to_store, int_register_value[(int)RegisterIntType::a1], 4);
                     } else {
-                        cerr << "[ERROR]: Due to the limitations of the project the interpreter cannot execute your instruction\n";
+                        std::cerr << "[ERROR]: Due to the limitations of the project the interpreter cannot execute your instruction\n";
                     }
                 } else if (address == TOTAL_MEMORY + 3) {
-                    string str = get_string_variable(int_register_value[(int)RegisterIntType::a0]);
+                    std::string str = get_string_variable(int_register_value[(int)RegisterIntType::a0]);
                     int_register_value[(int)RegisterIntType::a0] = str.length();
                 } else {
-                    cerr << "[ERROR]: Invalid function call\n";
+                    std::cerr << "[ERROR]: Invalid function call\n";
                 }
                 break;
             }
@@ -525,8 +523,8 @@ int main(int argc, char* argv[]) {
     while (stack_pointer >= MEMORY_SIZE + BINARY_SIZE) {
         uint64_t curr_num = 0;
         load_number_from_address(curr_num, stack_pointer, STACK_STEP);
-        fout << "0x" << uppercase << setw(4) << setfill('0') << hex << stack_pointer << ": ";
-        fout << "0x" << uppercase << setw(16) << setfill('0') << hex << curr_num << '\n';
+        fout << "0x" << std::uppercase << std::setw(4) << std::setfill('0') << std::hex << stack_pointer << ": ";
+        fout << "0x" << std::uppercase << std::setw(16) << std::setfill('0') << std::hex << curr_num << '\n';
         stack_pointer -= STACK_STEP;
     }
     return 0;

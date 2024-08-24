@@ -14,20 +14,16 @@
 #include "../utils/instruction_size.hpp"
 #include "../utils/cpu_spec.hpp"
 
-using namespace std;
+std::ofstream fout;
+std::ifstream enc;
 
-ofstream fout;
-ifstream enc;
-
-unordered_map<InstructionType, string> encodings;
-vector<pair<string, int>> label_address;
-vector<pair<string, string>> variables_list;
-vector<pair<string, int>> store_spaces;
-unordered_map<string, int> variable_address;
+std::unordered_map<InstructionType, std::string> encodings;
+std::vector<std::pair<std::string, int>> label_address;
+std::vector<std::pair<std::string, std::string>> variables_list;
+std::vector<std::pair<std::string, int>> store_spaces;
+std::unordered_map<std::string, int> variable_address;
 
 int current_bit_offset = 0, current_address = 0;
-
-const string main_label = "main";
 
 void join_bit(bool bit) {
 	static std::bitset<8> current_byte;
@@ -70,11 +66,11 @@ void emit_immediate(int num, const int bits_count) {
 }
 
 void emit_register(RegisterIntType reg) {
-	emit_immediate((int)reg, 4);
+	emit_immediate((int)reg, INT_REGISTER_BITS);
 }
 
 void emit_register(RegisterFloatType reg) {
-	emit_immediate((int)reg, 3);
+	emit_immediate((int)reg, FLOAT_REGISTER_BITS);
 }
 
 void emit_variables() {
@@ -82,7 +78,7 @@ void emit_variables() {
 		variable_address[elem.first] = current_address;
 
 		int sz = elem.second.size();
-		string real_string;
+		std::string real_string;
 		for (int i = 0; i < sz; ++i) {
 			if (elem.second[i] == '\\' && i + 1 < sz && elem.second[i + 1] == 'n') {
 				real_string += '\n';
@@ -107,21 +103,21 @@ void emit_variables() {
 
 
 
-void jump_over_spaces(int &pos, string line) {
+void jump_over_spaces(int &pos, std::string line) {
 	while (pos < (int) line.size() && isspace(line[pos])) {
 		pos++;
 	}
 }
 
-string get_word(int &pos, string line) {
-	string word;
+std::string get_word(int &pos, std::string line) {
+	std::string word;
 	while (pos < (int) line.size() && (isalnum(line[pos]) || line[pos] == '_' || line[pos] == '.')) {
 		word += line[pos++];
 	}
 	return word;
 }
 
-int get_number(int &pos, string line) {
+int get_number(int &pos, std::string line) {
 	int num = 0;
 	while (pos < (int) line.size() && '0' <= line[pos] && line[pos] <= '9') {
 		num = num * 10 + (line[pos++] - '0');
@@ -129,7 +125,7 @@ int get_number(int &pos, string line) {
 	return num;
 }
 
-bool is_directive(string line) {
+bool is_directive(std::string line) {
 	int pos = 0;
 	jump_over_spaces(pos, line);
 	if (pos >= (int) line.size() || line[pos] != '.') {
@@ -138,8 +134,8 @@ bool is_directive(string line) {
 	return true;
 }
 
-vector<string> get_directive(string line) {
-	vector<string> info;
+std::vector<std::string> get_directive(std::string line) {
+	std::vector<std::string> info;
 	int pos = line.find('.') + 1;
 	info.push_back(get_word(pos, line));
 	jump_over_spaces(pos, line);
@@ -150,7 +146,7 @@ vector<string> get_directive(string line) {
 	return info;
 }
 
-bool is_label(string line) {
+bool is_label(std::string line) {
 	int pos = 0;
 	jump_over_spaces(pos, line);
 	if (pos >= (int) line.size()) {
@@ -165,41 +161,41 @@ bool is_label(string line) {
 	return true;
 }
 
-string get_label(string line) {
+std::string get_label(std::string line) {
 	int pos = 0;
 	jump_over_spaces(pos, line);
-	string aux = get_word(pos, line);
+	std::string aux = get_word(pos, line);
 	return aux;
 }
 
-void parse_rodata(ifstream &fin) {
-	string line;
+void parse_rodata(std::ifstream &fin) {
+	std::string line;
 	while (getline(fin, line)) {
 		if (!is_label(line)) break;
 
-		string label = get_label(line);
+		std::string label = get_label(line);
 		int pos = line.find(":") + 1;
 		jump_over_spaces(pos, line);
-		string var_type = get_word(pos, line);
+		std::string var_type = get_word(pos, line);
 
 		if (var_type == ".asciz") {
 			jump_over_spaces(pos, line);
 			pos++;
 			int ending_pos = line.find("\"", pos);
-			string str = line.substr(pos, ending_pos - pos);
+			std::string str = line.substr(pos, ending_pos - pos);
 			variables_list.push_back({label, str});
 		} else if (var_type == ".space") {
 			jump_over_spaces(pos, line);
 			int memory_size = get_number(pos, line);
 			store_spaces.push_back({label, memory_size});
 		} else {
-			cerr << "[ERROR]: Invalid variable type\n";
+			std::cerr << "[ERROR]: Invalid variable type\n";
 		}
 	}
 }
 
-void find_labels_addresses(ifstream &fin) {
-	string line;
+void find_labels_addresses(std::ifstream &fin) {
+	std::string line;
     while (getline(fin, line)) {
 		if (is_directive(line)) {
 			auto info = get_directive(line);
@@ -207,7 +203,7 @@ void find_labels_addresses(ifstream &fin) {
 				parse_rodata(fin);
 			}
 		} else if (is_label(line)) {
-			string label = get_label(line);
+			std::string label = get_label(line);
 			label_address.push_back({label, current_address});
 		} else {
 			int pos = 0;
@@ -216,7 +212,7 @@ void find_labels_addresses(ifstream &fin) {
 				continue;
 			}
 
-			string instruction = get_word(pos, line);
+			std::string instruction = get_word(pos, line);
             current_address += get_instruction_size(instruction_to_enum(instruction));
         }
     }
@@ -225,7 +221,7 @@ void find_labels_addresses(ifstream &fin) {
     current_address = 0;
 }
 
-int get_closest_address(string label, int address, int dir) {
+int get_closest_address(std::string label, int address, int dir) {
     int ans = -1;
     if (dir == -1) {
         for (auto elem : label_address) {
@@ -244,7 +240,7 @@ int get_closest_address(string label, int address, int dir) {
     return ans;
 }
 
-int get_label_address(string label) {
+int get_label_address(std::string label) {
 	for (auto elem : label_address) {
 		if (elem.first == label) {
 			return elem.second;
@@ -254,14 +250,14 @@ int get_label_address(string label) {
 }
 
 void find_instructions() {
-	string instr, currEnc;
+	std::string instr, currEnc;
 	while (enc >> instr >> currEnc) {
 		encodings[instruction_to_enum(instr)] = currEnc;
 	}
 }
 
 int main(int argc, char *argv[]) {
-	ifstream fin(argv[1]);
+	std::ifstream fin(argv[1]);
 	fout.open(argv[2]);
 	enc.open(argv[3]);
 
@@ -269,7 +265,7 @@ int main(int argc, char *argv[]) {
 	current_address = MEMORY_SIZE;
 	find_labels_addresses(fin);
 	
-	int main_address = get_label_address(main_label);
+	int main_address = get_label_address("main");
 	emit_instruction(InstructionType::j);
 	emit_immediate(main_address, ADDRESS_SIZE);
 	pad_current_byte();
@@ -278,8 +274,8 @@ int main(int argc, char *argv[]) {
 
 	pad_bytes(MEMORY_SIZE);
 
-    string line;
-	while (getline(fin, line)) {
+    std::string line;
+	while (std::getline(fin, line)) {
 		if (is_directive(line) || is_label(line)) {
 			continue;
 		}
@@ -289,8 +285,8 @@ int main(int argc, char *argv[]) {
 			continue;
 		}
 
-		string instruction = get_word(pos, line);
-		cout << "Instruction: " << instruction << '\n';
+		std::string instruction = get_word(pos, line);
+		std::cout << "Instruction: " << instruction << '\n';
 
 		auto captureNumber = [&pos, line]() -> int {
 			int ans = 0, sgn = 1;
@@ -305,8 +301,8 @@ int main(int argc, char *argv[]) {
 			return ans;
 		};
 
-		auto captureWord = [&pos, line]() -> string {
-			string word;
+		auto captureWord = [&pos, line]() -> std::string {
+			std::string word;
 			while (pos < (int) line.size() && (isalnum(line[pos]) || line[pos] == '_')) {
 				word += line[pos++];
 			}
@@ -319,16 +315,16 @@ int main(int argc, char *argv[]) {
 			}
 		};
 
-		auto captureLabel = [&pos, line]() -> string {
-			string label;
+		auto captureLabel = [&pos, line]() -> std::string {
+			std::string label;
 			while (pos < (int) line.size() && (isalnum(line[pos]) || line[pos] == '_')) {
 				label += line[pos++];
 			}
 			return label;
 		};
 
-		auto getRegisters = [captureWord, jumpOverNonAlNum](const int cnt) -> vector<string> {
-			vector<string> registers;
+		auto getRegisters = [captureWord, jumpOverNonAlNum](const int cnt) -> std::vector<std::string> {
+			std::vector<std::string> registers;
 			for (int _ = 0; _ < cnt; ++_) {
 				jumpOverNonAlNum();
 				registers.push_back(captureWord());
@@ -336,8 +332,8 @@ int main(int argc, char *argv[]) {
 			return registers;
 		};
 
-		auto get2RegistersOffset = [captureNumber, captureWord, &pos, jumpOverNonAlNum]() -> pair<array<string, 2>, int> {
-			array<string, 2> regs;
+		auto get2RegistersOffset = [captureNumber, captureWord, &pos, jumpOverNonAlNum]() -> std::pair<std::array<std::string, 2>, int> {
+			std::array<std::string, 2> regs;
 			jumpOverNonAlNum();
 			regs[0] = captureWord();
 			jumpOverNonAlNum();
@@ -348,37 +344,38 @@ int main(int argc, char *argv[]) {
 		};
 
 		InstructionType curr_type = instruction_to_enum(instruction);
+		emit_instruction(curr_type);
 
 		switch (curr_type) {
 			case InstructionType::add: {
 				auto registers = getRegisters(3);
-				emit_instruction(InstructionType::add);
+				
 				for (auto elem : registers) {
 					emit_register(parseIntRegister(elem));
 				}
 				break;
 			}
 			case InstructionType::li: {
-				string currRegister;
+				std::string currRegister;
 				jumpOverNonAlNum();
 				currRegister = captureWord();
 				jumpOverNonAlNum();
 				int num = captureNumber();
 
-				emit_instruction(InstructionType::li);
+				
 				emit_register(parseIntRegister(currRegister));
 				emit_immediate(num, 8);
 				break;
 			}
 			case InstructionType::addi: {
 				jumpOverNonAlNum();
-				string reg1 = captureWord();
+				std::string reg1 = captureWord();
 				jumpOverNonAlNum();
-				string reg2 = captureWord();
+				std::string reg2 = captureWord();
 				jumpOverNonAlNum();
 				int num = captureNumber();
 
-				emit_instruction(InstructionType::addi);
+				
 				emit_register(parseIntRegister(reg1));
 				emit_register(parseIntRegister(reg2));
 				emit_immediate(num, 13);
@@ -387,24 +384,24 @@ int main(int argc, char *argv[]) {
 			case InstructionType::mv: {
 				auto registers = getRegisters(2);
 
-				emit_instruction(InstructionType::mv);
+				
 				emit_register(parseIntRegister(registers[0]));
 				emit_register(parseIntRegister(registers[1]));
 				break;
 			}
 			case InstructionType::ret: {
-				emit_instruction(InstructionType::ret);
+				
 				break;
 			}
 			case InstructionType::beqz: {
 				jumpOverNonAlNum();
-				string reg = captureWord();
+				std::string reg = captureWord();
 				jumpOverNonAlNum();
-				string label = captureWord();
+				std::string label = captureWord();
 				int direction = label.back() == 'f' ? 1 : -1;
 				label = label.substr(0, label.size() - 1);
 
-				emit_instruction(InstructionType::beqz);
+				
 				emit_register(parseIntRegister(reg));
 				emit_immediate(get_closest_address(label, current_address, direction), ADDRESS_SIZE);
 				break;
@@ -414,7 +411,7 @@ int main(int argc, char *argv[]) {
 				auto regs = info.first;
 				int offset = info.second;
 
-				emit_instruction(InstructionType::lb);
+				
 				emit_register(parseIntRegister(regs[0]));
 				emit_register(parseIntRegister(regs[1]));
 				emit_immediate(offset, 3);
@@ -422,11 +419,11 @@ int main(int argc, char *argv[]) {
 			}
 			case InstructionType::j: {
 				jumpOverNonAlNum();
-				string label = captureLabel();
+				std::string label = captureLabel();
 				int direction = label.back() == 'f' ? 1 : -1;
 				label = label.substr(0, label.size() - 1);
 
-				emit_instruction(InstructionType::j);
+				
 				emit_immediate(get_closest_address(label, current_address, direction), ADDRESS_SIZE);
 				break;
 			}
@@ -435,7 +432,7 @@ int main(int argc, char *argv[]) {
 				auto regs = info.first;
 				int offset = info.second;
 
-				emit_instruction(InstructionType::sb);
+				
 				emit_register(parseIntRegister(regs[0]));
 				emit_register(parseIntRegister(regs[1]));
 				emit_immediate(offset, 3);
@@ -443,15 +440,15 @@ int main(int argc, char *argv[]) {
 			}
 			case InstructionType::bge: {
 				jumpOverNonAlNum();
-				string reg1 = captureWord();
+				std::string reg1 = captureWord();
 				jumpOverNonAlNum();
-				string reg2 = captureWord();
+				std::string reg2 = captureWord();
 				jumpOverNonAlNum();
-				string label = captureWord();
+				std::string label = captureWord();
 				int direction = label.back() == 'f' ? 1 : -1;
 				label = label.substr(0, label.size() - 1);
 
-				emit_instruction(InstructionType::bge);
+				
 				emit_register(parseIntRegister(reg1));
 				emit_register(parseIntRegister(reg2));
 				emit_immediate(get_closest_address(label, current_address, direction), ADDRESS_SIZE);
@@ -460,7 +457,7 @@ int main(int argc, char *argv[]) {
 			case InstructionType::sub: {
 				auto registers = getRegisters(3);
 
-				emit_instruction(InstructionType::sub);
+				
 				for (auto elem : registers) {
 					emit_register(parseIntRegister(elem));
 				}
@@ -468,13 +465,13 @@ int main(int argc, char *argv[]) {
 			}
 			case InstructionType::srai: {
 				jumpOverNonAlNum();
-				string reg1 = captureWord();
+				std::string reg1 = captureWord();
 				jumpOverNonAlNum();
-				string reg2 = captureWord();
+				std::string reg2 = captureWord();
 				jumpOverNonAlNum();
 				int num = captureNumber();
 
-				emit_instruction(InstructionType::srai);
+				
 				emit_register(parseIntRegister(reg1));
 				emit_register(parseIntRegister(reg2));
 				emit_immediate(num, 2 + 8);
@@ -484,7 +481,7 @@ int main(int argc, char *argv[]) {
 				auto info = get2RegistersOffset();
 				auto regs = info.first;
 				int offset = info.second;
-				emit_instruction(InstructionType::sd);
+				
 				emit_register(parseIntRegister(regs[0]));
 				emit_register(parseIntRegister(regs[1]));
 				emit_immediate(offset, 3 + 8);
@@ -492,8 +489,8 @@ int main(int argc, char *argv[]) {
 			}
 			case InstructionType::call: {
 				jumpOverNonAlNum();
-				string label = captureLabel();
-				emit_instruction(InstructionType::call);
+				std::string label = captureLabel();
+				
 				int address = get_label_address(label);
 				if (address != -1) {
 					emit_immediate(address, ADDRESS_SIZE);
@@ -514,7 +511,7 @@ int main(int argc, char *argv[]) {
 				auto info = get2RegistersOffset();
 				auto regs = info.first;
 				int offset = info.second;
-				emit_instruction(InstructionType::ld);
+				
 				emit_register(parseIntRegister(regs[0]));
 				emit_register(parseIntRegister(regs[1]));
 				emit_immediate(offset, 3 + 8);
@@ -522,12 +519,12 @@ int main(int argc, char *argv[]) {
 			}
 			case InstructionType::slli: {
 				jumpOverNonAlNum();
-				string reg1 = captureWord();
+				std::string reg1 = captureWord();
 				jumpOverNonAlNum();
-				string reg2 = captureWord();
+				std::string reg2 = captureWord();
 				jumpOverNonAlNum();
 				int num = captureNumber();
-				emit_instruction(InstructionType::slli);
+				
 				emit_register(parseIntRegister(reg1));
 				emit_register(parseIntRegister(reg2));
 				emit_immediate(num, 2);
@@ -537,7 +534,7 @@ int main(int argc, char *argv[]) {
 				auto info = get2RegistersOffset();
 				auto regs = info.first;
 				int offset = info.second;
-				emit_instruction(InstructionType::lw);
+				
 				emit_register(parseIntRegister(regs[0]));
 				emit_register(parseIntRegister(regs[1]));
 				emit_immediate(offset, 3 + 8);
@@ -545,26 +542,26 @@ int main(int argc, char *argv[]) {
 			}
 			case InstructionType::bnez: {
 				jumpOverNonAlNum();
-				string reg = captureWord();
+				std::string reg = captureWord();
 				jumpOverNonAlNum();
-				string label = captureWord();
+				std::string label = captureWord();
 				int direction = label.back() == 'f' ? 1 : -1;
 				label = label.substr(0, label.size() - 1);
-				emit_instruction(InstructionType::bnez);
+				
 				emit_register(parseIntRegister(reg));
 				emit_immediate(get_closest_address(label, current_address, direction), ADDRESS_SIZE);
 				break;
 			}
 			case InstructionType::ble: {
 				jumpOverNonAlNum();
-				string reg1 = captureWord();
+				std::string reg1 = captureWord();
 				jumpOverNonAlNum();
-				string reg2 = captureWord();
+				std::string reg2 = captureWord();
 				jumpOverNonAlNum();
-				string label = captureWord();
+				std::string label = captureWord();
 				int direction = label.back() == 'f' ? 1 : -1;
 				label = label.substr(0, label.size() - 1);
-				emit_instruction(InstructionType::ble);
+				
 				emit_register(parseIntRegister(reg1));
 				emit_register(parseIntRegister(reg2));
 				emit_immediate(get_closest_address(label, current_address, direction), ADDRESS_SIZE);
@@ -574,7 +571,7 @@ int main(int argc, char *argv[]) {
 				auto info = get2RegistersOffset();
 				auto regs = info.first;
 				int offset = info.second;
-				emit_instruction(InstructionType::fld);
+				
 				emit_register(parseFloatRegister(regs[0]));
 				emit_register(parseIntRegister(regs[1]));
 				emit_immediate(offset, 4);
@@ -582,7 +579,7 @@ int main(int argc, char *argv[]) {
 			}
 			case InstructionType::fsub_d: {
 				auto registers = getRegisters(3);
-				emit_instruction(InstructionType::fsub_d);
+				
 				for (auto elem : registers) {
 					emit_register(parseFloatRegister(elem));
 				}
@@ -590,7 +587,7 @@ int main(int argc, char *argv[]) {
 			}
 			case InstructionType::fadd_d: {
 				auto registers = getRegisters(3);
-				emit_instruction(InstructionType::fadd_d);
+				
 				for (auto elem : registers) {
 					emit_register(parseFloatRegister(elem));
 				}
@@ -598,7 +595,7 @@ int main(int argc, char *argv[]) {
 			}
 			case InstructionType::fmul_d: {
 				auto registers = getRegisters(3);
-				emit_instruction(InstructionType::fmul_d);
+				
 				for (auto elem : registers) {
 					emit_register(parseFloatRegister(elem));
 				}
@@ -606,7 +603,7 @@ int main(int argc, char *argv[]) {
 			}
 			case InstructionType::fsqrt_d: {
 				auto registers = getRegisters(2);
-				emit_instruction(InstructionType::fsqrt_d);
+				
 				emit_register(parseFloatRegister(registers[0]));
 				emit_register(parseFloatRegister(registers[1]));
 				break;
@@ -615,7 +612,7 @@ int main(int argc, char *argv[]) {
 				auto info = get2RegistersOffset();
 				auto regs = info.first;
 				int offset = info.second;
-				emit_instruction(InstructionType::fsw);
+				
 				emit_register(parseFloatRegister(regs[0]));
 				emit_register(parseIntRegister(regs[1]));
 				emit_immediate(offset, 3);
@@ -623,14 +620,14 @@ int main(int argc, char *argv[]) {
 			}
 			case InstructionType::fmv_s: {
 				auto registers = getRegisters(2);
-				emit_instruction(InstructionType::fmv_s);
+				
 				emit_register(parseFloatRegister(registers[0]));
 				emit_register(parseFloatRegister(registers[1]));
 				break;
 			}
 			case InstructionType::flt_s: {
 				auto registers = getRegisters(3);
-				emit_instruction(InstructionType::flt_s);
+				
 				emit_register(parseIntRegister(registers[0]));
 				emit_register(parseFloatRegister(registers[1]));
 				emit_register(parseFloatRegister(registers[2]));
@@ -638,7 +635,7 @@ int main(int argc, char *argv[]) {
 			}
 			case InstructionType::fgt_s: {
 				auto registers = getRegisters(3);
-				emit_instruction(InstructionType::fgt_s);
+				
 				emit_register(parseIntRegister(registers[0]));
 				emit_register(parseFloatRegister(registers[1]));
 				emit_register(parseFloatRegister(registers[2]));
@@ -646,14 +643,14 @@ int main(int argc, char *argv[]) {
 			}
 			case InstructionType::bgt: {
 				jumpOverNonAlNum();
-				string reg1 = captureWord();
+				std::string reg1 = captureWord();
 				jumpOverNonAlNum();
-				string reg2 = captureWord();
+				std::string reg2 = captureWord();
 				jumpOverNonAlNum();
-				string label = captureWord();
+				std::string label = captureWord();
 				int direction = label.back() == 'f' ? 1 : -1;
 				label = label.substr(0, label.size() - 1);
-				emit_instruction(InstructionType::bgt);
+				
 				emit_register(parseIntRegister(reg1));
 				emit_register(parseIntRegister(reg2));
 				emit_immediate(get_closest_address(label, current_address, direction), ADDRESS_SIZE);
@@ -661,14 +658,14 @@ int main(int argc, char *argv[]) {
 			}
 			case InstructionType::fmv_s_x: {
 				auto registers = getRegisters(2);
-				emit_instruction(InstructionType::fmv_s_x);
+				
 				emit_register(parseFloatRegister(registers[0]));
 				emit_register(parseIntRegister(registers[1]));
 				break;
 			}
 			case InstructionType::fmul_s: {
 				auto registers = getRegisters(3);
-				emit_instruction(InstructionType::fmul_s);
+				
 				for (auto elem : registers) {
 					emit_register(parseFloatRegister(elem));
 				}
@@ -676,7 +673,7 @@ int main(int argc, char *argv[]) {
 			}
 			case InstructionType::fadd_s: {
 				auto registers = getRegisters(3);
-				emit_instruction(InstructionType::fadd_s);
+				
 				for (auto elem : registers) {
 					emit_register(parseFloatRegister(elem));
 				}
@@ -686,7 +683,7 @@ int main(int argc, char *argv[]) {
 				auto info = get2RegistersOffset();
 				auto regs = info.first;
 				int offset = info.second;
-				emit_instruction(InstructionType::flw);
+				
 				emit_register(parseFloatRegister(regs[0]));
 				emit_register(parseIntRegister(regs[1]));
 				emit_immediate(offset, 3);
@@ -694,10 +691,10 @@ int main(int argc, char *argv[]) {
 			}
 			case InstructionType::la: {
 				jumpOverNonAlNum();
-				string reg = captureWord();
+				std::string reg = captureWord();
 				jumpOverNonAlNum();
-				string label = captureWord();
-				emit_instruction(InstructionType::la);
+				std::string label = captureWord();
+				
 				emit_register(parseIntRegister(reg));
 				emit_immediate(variable_address[label], ADDRESS_SIZE);
 				break;
