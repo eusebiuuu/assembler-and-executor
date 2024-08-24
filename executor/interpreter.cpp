@@ -84,15 +84,6 @@ string get_string_variable(int address) {
     return ans;
 }
 
-int get_format_func_params(string s) {
-    string formats[] = {"%ld", "%d", "%hu", "%s"};
-    int total_count = 0;
-    for (auto str : formats) {
-        
-    }
-    return total_count;
-}
-
 void store_number_at_address(uint64_t num, uint64_t address, int bytes) {
     for (int i = 0; i < bytes; ++i) {
         file.seekp(address);
@@ -155,12 +146,14 @@ uint64_t convert_to_long_long(double num) {
 int main() {
     find_instructions();
 
+    cout << "Start interpreting the binary...\n";
+
     int_register_value[RegisterIntType::sp] = TOTAL_MEMORY - STACK_STEP + 1;
     int_register_value[RegisterIntType::ra] = EXIT_ADDRESS;
 
     bool exit_program = false;
 
-    int limit = 100;
+    // int limit = 100;
 
     while (!exit_program) {
         // limit--;
@@ -180,7 +173,7 @@ int main() {
         while (instr.find(curr_encoding) == instr.end()) {
             curr_encoding += curr_byte[pos++] + '0';
         }
-        cout << "Instruction code: " << instr[curr_encoding] << '\n';
+        // cout << "Instruction code: " << instr[curr_encoding] << '\n';
         InstructionType curr_instruction = instr[curr_encoding];
         auto instruction_encoding = get_full_instruction(curr_byte, get_instruction_size(curr_instruction));
 
@@ -503,6 +496,9 @@ int main() {
             }
         }
     }
+    cout << "Binary interpreting finished!\n";
+
+    cout << "Saving the program data to state file...\n";
     get_int_register_names();
     get_float_register_names();
     fout << "INT registers: \n";
@@ -522,5 +518,6 @@ int main() {
         fout << "0x" << uppercase << setw(16) << setfill('0') << hex << curr_num << '\n';
         stack_pointer -= STACK_STEP;
     }
+    cout << "Saving program data finished\n";
     return 0;
 }

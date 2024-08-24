@@ -260,11 +260,16 @@ void find_instructions() {
 }
 
 int main(int argc, char *argv[]) {
-	string path(argv[0]);
-	path = "../" + path;
+	cout << "Opening files and store the encodings...\n";
+	string path(argv[1]);
 	ifstream fin(path);
 
 	find_instructions();
+
+	cout << "Finished!\n";
+
+	cout << "Start parsing...\n";
+
 	current_address = MEMORY_SIZE;
 	find_labels_addresses(fin);
 	
@@ -289,7 +294,6 @@ int main(int argc, char *argv[]) {
 		}
 
 		string instruction = get_word(pos, line);
-		cout << "Instruction: " << instruction << '\n';
 
 		auto captureNumber = [&pos, line]() -> int {
 			int ans = 0, sgn = 1;
@@ -704,5 +708,6 @@ int main(int argc, char *argv[]) {
 		}
 	}
 	pad_bytes(BINARY_SIZE + MEMORY_SIZE + STACK_SIZE);
+	cout << "Parsing finished!\n";
     return 0;
 }
