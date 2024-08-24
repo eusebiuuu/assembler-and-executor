@@ -1,20 +1,29 @@
 #!/usr/bin/env bash
 
-for dir in './inputs'/*/; do
+function main() {
+    for dir in './inputs'/*/; do
 
-    echo -e "\n\t$(basename "$dir"):\nassembler:"
+        local category_name="$(basename "$dir")"
 
-    './outputs/parser' "${dir}asm.s" "./outputs/$(basename "$dir").bin" './encoder/encodings.txt'
+        echo -e "\n\t\t$category_name:\nassembler:"
 
-    echo -e "\ninterpreter:"
+        './outputs/parser' "${dir}asm.s" "./outputs/$category_name.bin" './encoder/encodings.txt'
 
-    for file in "$dir/tests"/*; do
+        echo -e "\ninterpreter:"
 
-        echo -e "\n\t\t$(basename "$file"):"
+        for file in "$dir/tests"/*; do
 
-        './outputs/interpreter' "./outputs/$(basename "$dir").bin" "./outputs/$(basename "$dir").out" './encoder/encodings.txt' './utils/int_registers.txt' './utils/float_registers.txt' < "$file"
+            local test_file_name="$(basename "$file")"
+            test_file_name="${test_file_name%.*}"
+
+            echo -e "\n\t$test_file_name:"
+
+            timeout 0.1s './outputs/interpreter' "./outputs/$category_name.bin" "./outputs/${category_name}_$test_file_name.out" './encoder/encodings.txt' './utils/int_registers.txt' './utils/float_registers.txt' < "$file"
+        done
+
+        echo ""
+
     done
+}
 
-    echo ""
-
-done
+main
