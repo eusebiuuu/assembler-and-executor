@@ -17,4 +17,4 @@ with open('../utils/dumb_parser.hpp', 'w') as file:
     for instruction, count in instruction_counter:
         file.write(f'\n\tif(instruction == "{instruction}"){{return InstructionType::{instruction.replace('.','_')};}}')
 
-    file.write('\n}')
+    file.write('\n\tthrow std::runtime_error("Failed to get enum for instruction: \'" + instruction + "\'");\n}')
