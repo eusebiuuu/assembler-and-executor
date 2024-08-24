@@ -261,7 +261,14 @@ int main(int argc, char *argv[]) {
 	fout.open(argv[2]);
 	enc.open(argv[3]);
 
+	std::cout << "Opening files and store the encodings...\n";
+
 	find_instructions();
+
+	std::cout << "Finished!\n";
+
+	std::cout << "Start parsing...\n";
+
 	current_address = MEMORY_SIZE;
 	find_labels_addresses(fin);
 	
@@ -663,32 +670,32 @@ int main(int argc, char *argv[]) {
 				emit_register(parseIntRegister(registers[1]));
 				break;
 			}
-			case InstructionType::fmul_s: {
-				auto registers = getRegisters(3);
-				
-				for (auto elem : registers) {
-					emit_register(parseFloatRegister(elem));
-				}
-				break;
-			}
-			case InstructionType::fadd_s: {
-				auto registers = getRegisters(3);
-				
-				for (auto elem : registers) {
-					emit_register(parseFloatRegister(elem));
-				}
-				break;
-			}
-			case InstructionType::flw: {
-				auto info = get2RegistersOffset();
-				auto regs = info.first;
-				int offset = info.second;
-				
-				emit_register(parseFloatRegister(regs[0]));
-				emit_register(parseIntRegister(regs[1]));
-				emit_immediate(offset, 3);
-				break;
-			}
+			//case InstructionType::fmul_s: {
+			//	auto registers = getRegisters(3);
+			//	
+			//	for (auto elem : registers) {
+			//		emit_register(parseFloatRegister(elem));
+			//	}
+			//	break;
+			//}
+			//case InstructionType::fadd_s: {
+			//	auto registers = getRegisters(3);
+			//	
+			//	for (auto elem : registers) {
+			//		emit_register(parseFloatRegister(elem));
+			//	}
+			//	break;
+			//}
+			//case InstructionType::flw: {
+			//	auto info = get2RegistersOffset();
+			//	auto regs = info.first;
+			//	int offset = info.second;
+			//	
+			//	emit_register(parseFloatRegister(regs[0]));
+			//	emit_register(parseIntRegister(regs[1]));
+			//	emit_immediate(offset, 3);
+			//	break;
+			//}
 			case InstructionType::la: {
 				jumpOverNonAlNum();
 				std::string reg = captureWord();
@@ -702,5 +709,6 @@ int main(int argc, char *argv[]) {
 		}
 	}
 	pad_bytes(BINARY_SIZE + MEMORY_SIZE + STACK_SIZE);
+	std::cout << "Parsing finished!\n";
     return 0;
 }

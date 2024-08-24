@@ -54,7 +54,7 @@ main:
     call distance
 
     addi sp, sp, -8
-    fsw fa0, 0(sp)
+    fsw fa0, 0(sp) # this won't work since we need to store 8 bytes, not 4 and we lack a proper command, like fsd...
     ld a1, 0(sp)
     addi sp, sp, 8
     

@@ -4,10 +4,10 @@ all: ./outputs/parser ./outputs/interpreter
 	cd './encoder'; \
 	python './encodings_generator.py'
 
-./encoder/encodings.txt: ./encoder/freq.txt ./encoder/huffman.cpp
-	g++ -std=c++23 './encoder/huffman.cpp' -o './outputs/encoder'
-	cd './encoder';  \
-	'../outputs/encoder'
+#./encoder/encodings.txt: ./encoder/freq.txt ./encoder/huffman.cpp
+#	g++ -std=c++23 './encoder/huffman.cpp' -o './outputs/encoder'
+#	cd './encoder';  \
+#	'../outputs/encoder'
 
 ./utils/instruction_enum.hpp ./utils/dumb_parser.hpp: ./utils/utils_generator.py ./utils/instruction_name_counter.py
 	cd './utils'; \
@@ -40,7 +40,7 @@ all: ./outputs/parser ./outputs/interpreter
 
 clean:
 	-rm './encoder/freq.txt'
-	-rm './encoder/encodings.txt'
+#	-rm './encoder/encodings.txt'
 
 	-rm './outputs/encoder'
 

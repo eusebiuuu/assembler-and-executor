@@ -83,15 +83,6 @@ std::string get_string_variable(int address) {
     return ans;
 }
 
-int get_format_func_params(std::string s) {
-    std::string formats[] = {"%ld", "%d", "%hu", "%s"};
-    int total_count = 0;
-    for (auto str : formats) {
-        
-    }
-    return total_count;
-}
-
 void store_number_at_address(uint64_t num, uint64_t address, int bytes) {
     for (int i = 0; i < bytes; ++i) {
         file.seekp(address);
@@ -160,12 +151,14 @@ int main(int argc, char* argv[]) {
 
     find_instructions();
 
+    std::cout << "Start interpreting the binary...\n";
+
     int_register_value[(int)RegisterIntType::sp] = TOTAL_MEMORY - STACK_STEP + 1;
     int_register_value[(int)RegisterIntType::ra] = EXIT_ADDRESS;
 
     bool exit_program = false;
 
-    int limit = 100;
+    // int limit = 100;
 
     while (!exit_program) {
         // limit--;
@@ -185,7 +178,7 @@ int main(int argc, char* argv[]) {
         while (instr.find(curr_encoding) == instr.end()) {
             curr_encoding += curr_byte[pos++] + '0';
         }
-        std::cout << "Instruction code: " << (int)instr[curr_encoding] << '\n';
+        //std::cout << "Instruction code: " << (int)instr[curr_encoding] << '\n';
         InstructionType curr_instruction = instr[curr_encoding];
         auto instruction_encoding = get_full_instruction(curr_byte, get_instruction_size(curr_instruction));
 
@@ -478,27 +471,27 @@ int main(int argc, char* argv[]) {
                 float_register_value[reg1] = convert_to_int(convert_to_float(int_register_value[reg2]));
                 break;
             }
-            case InstructionType::fmul_s: {
-                int reg1 = get_number(FLOAT_REGISTER_BITS);
-                int reg2 = get_number(FLOAT_REGISTER_BITS);
-                int reg3 = get_number(FLOAT_REGISTER_BITS);
-                float_register_value[reg1] = 
-                    convert_to_int(convert_to_float(float_register_value[reg2]) * convert_to_float(float_register_value[reg3]));
-            }
-            case InstructionType::fadd_s: {
-                int reg1 = get_number(FLOAT_REGISTER_BITS);
-                int reg2 = get_number(FLOAT_REGISTER_BITS);
-                int reg3 = get_number(FLOAT_REGISTER_BITS);
-                float_register_value[reg1] = 
-                    convert_to_int(convert_to_float(float_register_value[reg2]) + convert_to_float(float_register_value[reg3]));
-            }
-            case InstructionType::flw: {
-                int reg1 = get_number(FLOAT_REGISTER_BITS);
-                int reg2 = get_number(INT_REGISTER_BITS);
-                int offset = get_number(3, -1);
-                load_number_from_address(float_register_value[reg1], offset + int_register_value[reg2], 4);
-                break;
-            }
+            //case InstructionType::fmul_s: {
+            //    int reg1 = get_number(FLOAT_REGISTER_BITS);
+            //    int reg2 = get_number(FLOAT_REGISTER_BITS);
+            //    int reg3 = get_number(FLOAT_REGISTER_BITS);
+            //    float_register_value[reg1] = 
+            //        convert_to_int(convert_to_float(float_register_value[reg2]) * convert_to_float(float_register_value[reg3]));
+            //}
+            //case InstructionType::fadd_s: {
+            //    int reg1 = get_number(FLOAT_REGISTER_BITS);
+            //    int reg2 = get_number(FLOAT_REGISTER_BITS);
+            //    int reg3 = get_number(FLOAT_REGISTER_BITS);
+            //    float_register_value[reg1] = 
+            //        convert_to_int(convert_to_float(float_register_value[reg2]) + convert_to_float(float_register_value[reg3]));
+            //}
+            //case InstructionType::flw: {
+            //    int reg1 = get_number(FLOAT_REGISTER_BITS);
+            //    int reg2 = get_number(INT_REGISTER_BITS);
+            //    int offset = get_number(3, -1);
+            //    load_number_from_address(float_register_value[reg1], offset + int_register_value[reg2], 4);
+            //    break;
+            //}
             case InstructionType::la: {
                 int reg = get_number(INT_REGISTER_BITS);
                 int address = get_number(ADDRESS_SIZE);
@@ -508,6 +501,9 @@ int main(int argc, char* argv[]) {
             }
         }
     }
+    std::cout << "Binary interpreting finished!\n";
+
+    std::cout << "Saving the program data to state file...\n";
     get_int_register_names();
     get_float_register_names();
     fout << "INT registers: \n";
@@ -527,5 +523,6 @@ int main(int argc, char* argv[]) {
         fout << "0x" << std::uppercase << std::setw(16) << std::setfill('0') << std::hex << curr_num << '\n';
         stack_pointer -= STACK_STEP;
     }
+    std::cout << "Saving program data finished\n";
     return 0;
 }

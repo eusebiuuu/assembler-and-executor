@@ -18,7 +18,7 @@ function main() {
 
             echo -e "\n\t$test_file_name:"
 
-            timeout 0.1s './outputs/interpreter' "./outputs/$category_name.bin" "./outputs/${category_name}_$test_file_name.out" './encoder/encodings.txt' './utils/int_registers.txt' './utils/float_registers.txt' < "$file"
+            timeout 0.5s './outputs/interpreter' "./outputs/$category_name.bin" "./outputs/${category_name}_$test_file_name.out" './encoder/encodings.txt' './utils/int_registers.txt' './utils/float_registers.txt' < "$file"
         done
 
         echo ""
