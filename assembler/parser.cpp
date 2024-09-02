@@ -293,7 +293,7 @@ int main(int argc, char *argv[]) {
 		}
 
 		std::string instruction = get_word(pos, line);
-		std::cout << "Instruction: " << instruction << '\n';
+		// std::cout << "Instruction: " << instruction << '\n';
 
 		auto captureNumber = [&pos, line]() -> int {
 			int ans = 0, sgn = 1;

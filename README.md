@@ -18,7 +18,7 @@ git clone https://github.com/eusebiuuu/assembler-and-executor.git
 ```
 2. Run the tests
 ```sh
-tests
+make all test
 ```
 3. You can add more tests by creating a directory in `inputs` folder that consists of the assembly program with the name of `asm.s` and a sub-directory with tests. For more information you can check the structure of the existing tests.
 

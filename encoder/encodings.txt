@@ -20,7 +20,6 @@ srai	000100
 la	010111
 flt.s	001111
 fgt.s	001110
-flw	001101
 fmul.d	001100
 ble	001000
 fsub.d	000111
@@ -28,7 +27,5 @@ sub	0101101
 bgt	0101100
 fsqrt.d	0010011
 fadd.d	0010010
-fadd.s	0001101
-fmul.s	0001100
 fmv.s.x	0001011
 bnez	0001010
